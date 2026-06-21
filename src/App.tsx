@@ -19,12 +19,13 @@ import PremiumAboutAdditions from './components/PremiumAboutAdditions';
 import PremiumServicesAdditions from './components/PremiumServicesAdditions';
 import PremiumContactAdditions from './components/PremiumContactAdditions';
 
-import { CATEGORY_TREE, INITIAL_BRANDS } from './data/bearingsData';
+import { CATEGORY_TREE, INITIAL_BRANDS, INITIAL_PRODUCTS } from './data/bearingsData';
 import { Product, QuoteItem, FilterState } from './types';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('home'); // home, brands, services, about, contact
   const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -130,48 +131,79 @@ export default function App() {
 
   const [contactSuccess, setContactSuccess] = useState(false);
 
-  // Fetch product listings periodically or upon filter updates
+  // Filter product listings locally from static catalog data
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        query: searchQuery,
-        field: searchField,
-        matchType,
-        category: selectedCategory,
-        brand: selectedBrand,
-        idMin: innerDiameterMin,
-        idMax: innerDiameterMax,
-        odMin: outerDiameterMin,
-        odMax: outerDiameterMax,
-        wMin: widthMin,
-        wMax: widthMax,
-        material,
-        sealType,
-        cageType,
-        stockStatus,
-        priceMin,
-        priceMax,
-        origin,
-        sort: sortOption,
-        page: String(page),
-        limit: String(limit)
-      });
+      let filtered = [...allProducts];
 
-      const res = await fetch(`/api/products?${params.toString()}`);
-      const data = await res.json();
-      if (res.ok) {
-        setProducts(data.items || []);
-        setTotalPages(data.totalPages || 1);
-        setTotalCount(data.total || 0);
+      // Filter by text query using advanced matches
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        filtered = filtered.filter((p) => {
+          let valueToSearch = '';
+          if (searchField === 'partNumber') valueToSearch = p.partNumber.toLowerCase();
+          else if (searchField === 'name') valueToSearch = p.name.toLowerCase();
+          else if (searchField === 'brand') valueToSearch = p.brand.toLowerCase();
+          else if (searchField === 'series') {
+            const match = p.partNumber.match(/[a-zA-Z]+|\d+/g);
+            valueToSearch = match ? match[0].toLowerCase() : p.partNumber.toLowerCase();
+          } else {
+            valueToSearch = `${p.partNumber} ${p.name} ${p.brand} ${p.category}`.toLowerCase();
+          }
 
-        // Prepopulate default quantity maps inside quantity selectors
-        const qtyMap: any = {};
-        data.items.forEach((p: Product) => {
-          qtyMap[p.id] = quantities[p.id] || 1;
+          if (matchType === 'exact') return valueToSearch === q;
+          if (matchType === 'startsWith') return valueToSearch.startsWith(q);
+          return valueToSearch.includes(q);
         });
-        setQuantities(qtyMap);
       }
+
+      if (selectedCategory) {
+        const cat = selectedCategory.toLowerCase();
+        filtered = filtered.filter((p) => p.category.toLowerCase().includes(cat) || cat.includes(p.category.toLowerCase()));
+      }
+
+      if (selectedBrand) {
+        const cleanBrand = (b: string) => b.replace(/\s*\(\d+\)\s*$/, '').trim().toLowerCase();
+        const bName = cleanBrand(selectedBrand);
+        filtered = filtered.filter((p) => cleanBrand(p.brand) === bName);
+      }
+
+      if (innerDiameterMin) filtered = filtered.filter((p) => p.innerDiameter >= parseFloat(innerDiameterMin));
+      if (innerDiameterMax) filtered = filtered.filter((p) => p.innerDiameter <= parseFloat(innerDiameterMax));
+      if (outerDiameterMin) filtered = filtered.filter((p) => p.outerDiameter >= parseFloat(outerDiameterMin));
+      if (outerDiameterMax) filtered = filtered.filter((p) => p.outerDiameter <= parseFloat(outerDiameterMax));
+      if (widthMin) filtered = filtered.filter((p) => p.width >= parseFloat(widthMin));
+      if (widthMax) filtered = filtered.filter((p) => p.width <= parseFloat(widthMax));
+
+      if (material) filtered = filtered.filter((p) => p.material.toLowerCase() === material.toLowerCase());
+      if (sealType) filtered = filtered.filter((p) => p.sealType.toLowerCase().includes(sealType.toLowerCase()));
+      if (cageType) filtered = filtered.filter((p) => p.cageType.toLowerCase().includes(cageType.toLowerCase()));
+      if (stockStatus) filtered = filtered.filter((p) => p.stockStatus.toLowerCase() === stockStatus.toLowerCase());
+      if (priceMin) filtered = filtered.filter((p) => p.price >= parseFloat(priceMin));
+      if (priceMax) filtered = filtered.filter((p) => p.price <= parseFloat(priceMax));
+      if (origin) filtered = filtered.filter((p) => p.countryOfOrigin.toLowerCase() === origin.toLowerCase());
+
+      if (sortOption === 'price-asc') filtered.sort((a, b) => a.price - b.price);
+      else if (sortOption === 'price-desc') filtered.sort((a, b) => b.price - a.price);
+      else if (sortOption === 'partNumber-asc') filtered.sort((a, b) => a.partNumber.localeCompare(b.partNumber));
+      else if (sortOption === 'partNumber-desc') filtered.sort((a, b) => b.partNumber.localeCompare(a.partNumber));
+
+      const total = filtered.length;
+      const pages = Math.max(1, Math.ceil(total / limit));
+      const currentPage = Math.min(page, pages);
+      const startIndex = (currentPage - 1) * limit;
+      const paginatedItems = filtered.slice(startIndex, startIndex + limit);
+
+      setProducts(paginatedItems);
+      setTotalPages(pages);
+      setTotalCount(total);
+
+      const qtyMap: any = {};
+      paginatedItems.forEach((p: Product) => {
+        qtyMap[p.id] = quantities[p.id] || 1;
+      });
+      setQuantities(qtyMap);
     } catch (err) {
       console.error('Failed to load bearings catalog:', err);
     } finally {
@@ -189,23 +221,27 @@ export default function App() {
 
   // Autocomplete Suggestions fetcher
   useEffect(() => {
-    const fetchSuggestions = async () => {
+    const fetchSuggestions = () => {
       if (!searchQuery.trim()) {
         setSuggestions([]);
         return;
       }
-      try {
-        const res = await fetch(`/api/products/suggestions?query=${encodeURIComponent(searchQuery)}`);
-        const data = await res.json();
-        setSuggestions(data);
-      } catch (err) {
-        console.error('Auto-suggestions failed:', err);
-      }
+      const q = searchQuery.toLowerCase().trim();
+      const suggestionsData = allProducts
+        .filter((p) => p.partNumber.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q))
+        .slice(0, 10)
+        .map((p) => ({
+          partNumber: p.partNumber,
+          brand: p.brand,
+          name: p.name,
+          category: p.category
+        }));
+      setSuggestions(suggestionsData);
     };
 
-    const debounceTimer = setTimeout(fetchSuggestions, 200);
-    return () => clearTimeout(debounceTimer);
-  }, [searchQuery]);
+    const debounceTimer = window.setTimeout(fetchSuggestions, 200);
+    return () => window.clearTimeout(debounceTimer);
+  }, [searchQuery, allProducts]);
 
   // Command handlers
   const handleSearchSubmit = (e: React.FormEvent) => {

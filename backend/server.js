@@ -4,7 +4,8 @@ import { createApp } from './app.js';
 
 dotenv.config();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 6060;
+const HOST = process.env.HOST || '0.0.0.0';
 
 const startServer = async () => {
   try {
@@ -13,8 +14,8 @@ const startServer = async () => {
 
     const app = createApp();
 
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`[Universal Enterprise Backend] Server running on http://0.0.0.0:${PORT}`);
+    app.listen(PORT, HOST, () => {
+      console.log(`[Universal Enterprise Backend] Server running on http://${HOST}:${PORT}`);
       console.log(`[Universal Enterprise Backend] Health status available at http://localhost:${PORT}/api/health`);
     });
   } catch (error) {

@@ -33,6 +33,9 @@ import emailRoutes from './routes/emailRoutes.js';
 export const createApp = () => {
   const app = express();
 
+  // Trust first proxy (Nginx reverse proxy)
+  app.set('trust proxy', 1);
+
   // Security Headers
   app.use(helmet({
     contentSecurityPolicy: false,

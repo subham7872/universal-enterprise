@@ -32,7 +32,7 @@ module.exports = {
       name: 'universal-voice-agent',
       cwd: './voice-agent',
       script: 'main.py',
-      interpreter: 'python3',
+      interpreter: './venv/bin/python3',
       instances: 1,
       autorestart: true,
       watch: false,

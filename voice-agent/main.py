@@ -143,15 +143,15 @@ async def gather_response(request: Request):
         session["silence_retries"] = retries
         call_sessions[call_sid] = session
 
-        if retries >= 3:
-            # Polite goodbye only after 3 consecutive silent intervals (approx 24 seconds of silence)
+        if retries >= 5:
+            # Polite goodbye only after 5 consecutive silent intervals (approx 45 seconds of silence)
             goodbye_reply = f"Shukriya {lead_data.get('name', 'ji')}! Hamari engineering team aapse WhatsApp aur email par sampark karegi. Aapka din shubh rahe!"
             twiml_xml = build_response_twiml(goodbye_reply, lead_data=lead_data, is_hindi=True, is_final=True)
             save_call_log(call_sid, lead_id, lead_data, history, outcome="Unreachable")
             return Response(content=twiml_xml, media_type="application/xml")
         else:
             # Soft re-prompt to keep conversation alive
-            reprompt = f"Ji {lead_data.get('name', '')} ji, kya aap mujhe sun paa rahe hain? Main aapke bearing requirement ke baare mein baat kar rahi thi."
+            reprompt = f"Namaste {lead_data.get('name', '')} ji, kya aap mujhe sun paa rahe hain? Main Universal Enterprise se aapke bearing requirement ke baare mein baat kar rahi thi."
             twiml_xml = build_response_twiml(reprompt, lead_data=lead_data, is_hindi=True, is_final=False)
             return Response(content=twiml_xml, media_type="application/xml")
 
@@ -183,6 +183,5 @@ async def gather_response(request: Request):
     twiml_xml = build_response_twiml(reply_text, lead_data=lead_data, is_hindi=is_hindi, is_final=is_booked)
     return Response(content=twiml_xml, media_type="application/xml")
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+import uvicorn
+uvicorn.run(app, host="0.0.0.0", port=8001)

@@ -129,6 +129,20 @@ export default function AiCompanion({ onSelectProduct }) {
     setLoading(true);
 
     try {
+      // Auto lead capture detection in Chat
+      const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      const phoneMatch = text.match(/(?:\+91|0)?[6789]\d{9}|\b\d{10}\b/);
+      if (emailMatch || phoneMatch) {
+        api.submitLead({
+          name: 'Chatbot Visitor',
+          email: emailMatch ? emailMatch[0] : '',
+          phone: phoneMatch ? phoneMatch[0] : '',
+          mobile: phoneMatch ? phoneMatch[0] : '',
+          message: text,
+          source: 'chatbot'
+        }).catch(() => {});
+      }
+
       const res = await api.sendChatMessage(newHistory);
       const assistantText = res.text || 'Thank you for your inquiry. Our engineering desk is verifying parameters.';
 
@@ -144,7 +158,7 @@ export default function AiCompanion({ onSelectProduct }) {
     } catch (err) {
       const fallbackMsg = {
         sender: 'assistant',
-        text: `Universal Enterprise Desk note: We distribute genuine NTN, NSK, THK, and SKF units. Please contact sales@ntnbearing.in or call +91 44 6686 7700 for immediate quotes.`,
+        text: `Universal Enterprise Desk note: We distribute genuine NTN, NSK, THK, and SKF units. Please contact ue14.email@gmail.com or call +91 9900726939 / 8123836939 for immediate quotes.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages((prev) => [...prev, fallbackMsg]);
@@ -155,32 +169,33 @@ export default function AiCompanion({ onSelectProduct }) {
 
   return (
     <>
-      {/* Floating Action Trigger Button */}
-      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2">
-        {voiceSupported && (
+      {/* Floating Voice Action Button on the Left */}
+      {voiceSupported && (
+        <div className="fixed bottom-6 left-6 z-50">
           <button
             onClick={toggleVoiceInput}
-            className={`p-3.5 rounded-full shadow-2xl transition transform active:scale-95 cursor-pointer border-2 ${
+            className={`w-13 h-13 rounded-full shadow-2xl transition transform hover:scale-105 active:scale-95 cursor-pointer border-2 flex items-center justify-center ${
               isVoiceActive
                 ? 'bg-red-600 border-white text-white animate-pulse'
-                : 'bg-slate-900 border-[#f2cc4d] text-[#f2cc4d] hover:bg-slate-800'
+                : 'bg-slate-900 border-[#f2cc4d] text-[#f2cc4d] hover:bg-slate-800 hover:text-white'
             }`}
-            title="Voice Speech Search"
+            title={isVoiceActive ? 'Stop Listening' : 'Voice Search (Speech-to-Text)'}
           >
-            {isVoiceActive ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            {isVoiceActive ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
           </button>
-        )}
+        </div>
+      )}
 
+      {/* Floating Circular Chatbot Action Button on the Right */}
+      <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setIsChatOpen(!isChatOpen)}
-          className="group relative flex items-center gap-2.5 bg-[#003366] hover:bg-[#002244] text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full border-2 border-[#f2cc4d] shadow-2xl transition transform hover:scale-105 active:scale-95 cursor-pointer"
+          className="group relative w-14 h-14 rounded-full bg-[#003366] hover:bg-[#002244] text-white border-2 border-[#f2cc4d] shadow-2xl transition transform hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
+          title="AI Bearing Sourcing Desk"
         >
-          <Bot className="w-5 h-5 text-[#f2cc4d] group-hover:animate-spin" />
-          <span className="hidden sm:inline font-bold text-xs uppercase tracking-wider">
-            AI Bearing Sourcing Desk
-          </span>
-          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-900 animate-ping"></span>
-          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-900"></span>
+          <Bot className="w-7 h-7 text-[#f2cc4d] group-hover:rotate-12 transition-transform duration-200" />
+          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-900 animate-ping"></span>
+          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-900"></span>
         </button>
       </div>
 

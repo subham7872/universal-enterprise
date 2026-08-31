@@ -1,10 +1,29 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+// Base URL configuration - cleans any trailing slashes or duplicate /api prefixes
+const getApiBase = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:6060';
+  const trimmed = envUrl.trim().replace(/\/+$/, '');
+  return trimmed.endsWith('/api') ? trimmed.slice(0, -4) : trimmed;
+};
+
+const API_BASE = getApiBase();
 
 async function request(endpoint, options = {}) {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+  let cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
+  // Ensure endpoint starts with /api if not already
+  if (!cleanEndpoint.startsWith('/api/') && cleanEndpoint !== '/api') {
+    cleanEndpoint = `/api${cleanEndpoint}`;
+  }
+
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${cleanEndpoint}`;
+  
+  const token = typeof window !== 'undefined' ? localStorage.getItem('crm_token') : null;
+  const authHeaders = token ? { 'Authorization': `Bearer ${token}` } : {};
+
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...options.headers,
     },
     ...options,
@@ -18,7 +37,7 @@ async function request(endpoint, options = {}) {
     }
     return data;
   } catch (error) {
-    console.error(`[API Error ${endpoint}]:`, error.message);
+    console.error(`[API Error ${cleanEndpoint}]:`, error.message);
     throw error;
   }
 }
@@ -32,6 +51,21 @@ export const api = {
   getProductById: (id) => request(`/api/products/${id}`),
   getBrands: () => request('/api/products/brands'),
   getSuggestions: (searchQuery) => request(`/api/products/suggestions?query=${encodeURIComponent(searchQuery)}`),
+  createProduct: (productData) => request('/api/products', {
+    method: 'POST',
+    body: JSON.stringify(productData),
+  }),
+  updateProduct: (id, productData) => request(`/api/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(productData),
+  }),
+  deleteProduct: (id) => request(`/api/products/${id}`, {
+    method: 'DELETE',
+  }),
+  uploadProductImage: (imageBase64, filename, productId) => request('/api/products/upload-image', {
+    method: 'POST',
+    body: JSON.stringify({ imageBase64, filename, productId }),
+  }),
   uploadCsv: (csvText) => request('/api/products/upload', {
     method: 'POST',
     body: JSON.stringify({ csvText }),
@@ -59,9 +93,13 @@ export const api = {
     return request(`/api/orders${query ? `?${query}` : ''}`);
   },
 
-  // CRM Leads
+  // CRM Leads & Unified Form Ingestion
   getLeads: () => request('/api/leads'),
-  createLead: (leadData) => request('/api/leads', {
+  submitLead: (leadData) => request('/api/leads/submit', {
+    method: 'POST',
+    body: JSON.stringify(leadData),
+  }),
+  createLead: (leadData) => request('/api/leads/submit', {
     method: 'POST',
     body: JSON.stringify(leadData),
   }),
@@ -72,6 +110,13 @@ export const api = {
   deleteLead: (id) => request(`/api/leads/${id}`, {
     method: 'DELETE',
   }),
+
+  // Auth
+  loginAdmin: (creds) => request('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(creds),
+  }),
+  verifyAdmin: () => request('/api/auth/verify'),
 
   // Customers
   getCustomers: () => request('/api/customers'),

@@ -67,7 +67,7 @@ export default function QuoteListDrawer({
       setSuccessResponse(res);
 
       if (formData.routing === 'WhatsApp') {
-        const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+914466867700';
+        const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+919900726939';
         const cleanNumber = whatsappNumber.replace(/[^0-9+]/g, '');
         const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanNumber}&text=${encodeURIComponent(
           `${fullMessage}\n\nGenerated Reference: ${res.quoteId}`
@@ -280,7 +280,7 @@ export default function QuoteListDrawer({
                       onChange={handleInputChange}
                       className="w-full p-2.5 bg-slate-50 border rounded font-semibold text-slate-800"
                     >
-                      <option value="WhatsApp">Direct WhatsApp Dispatch (+91 44 6686 7700)</option>
+                      <option value="WhatsApp">Direct WhatsApp Dispatch (+91 9900726939)</option>
                       <option value="CRM">Universal Enterprise CRM / Email Desk</option>
                     </select>
                   </div>

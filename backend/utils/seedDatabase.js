@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import connectDB from '../config/db.js';
 import { Product } from '../models/Product.js';
@@ -15,6 +16,11 @@ dotenv.config();
 export const seedDatabase = async () => {
   try {
     await connectDB();
+
+    if (mongoose.connection.readyState !== 1) {
+      console.log(`[Seed Notice] MongoDB is not connected yet. ${INITIAL_PRODUCTS.length} bearings are available in backend memory cache.`);
+      return;
+    }
 
     console.log('[Seed] Clearing existing collections...');
     await Product.deleteMany({});

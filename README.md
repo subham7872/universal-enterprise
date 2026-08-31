@@ -57,14 +57,14 @@ MONGODB_URI=mongodb+srv://ue14email_db_user:4yITHzyDAa1rPHXa@cluster0.pqmpdeb.mo
 HOST=0.0.0.0
 GEMINI_API_KEY=
 FRONTEND_URL=http://localhost:3000
-WHATSAPP_NUMBER=+914466867700
+WHATSAPP_NUMBER=+919900726939
 NODE_ENV=development
 ```
 
 ### Frontend (`frontend/.env.local` - Optional)
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:6060
-NEXT_PUBLIC_WHATSAPP_NUMBER=+914466867700
+NEXT_PUBLIC_WHATSAPP_NUMBER=+919900726939
 ```
 
 ---

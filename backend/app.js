@@ -3,6 +3,18 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ensure uploads folder exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 import errorHandler from './middleware/errorHandler.js';
 import productRoutes from './routes/productRoutes.js';
@@ -15,6 +27,8 @@ import callLogRoutes from './routes/callLogRoutes.js';
 import workflowRoutes from './routes/workflowRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import emailRoutes from './routes/emailRoutes.js';
 
 export const createApp = () => {
   const app = express();
@@ -54,6 +68,9 @@ export const createApp = () => {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+  // Static uploads serving
+  app.use('/uploads', express.static(uploadsDir));
+
   // Health check
   app.get('/api/health', (req, res) => {
     res.json({
@@ -75,6 +92,8 @@ export const createApp = () => {
   app.use('/api/workflows', workflowRoutes);
   app.use('/api/analytics', analyticsRoutes);
   app.use('/api/ai', aiRoutes);
+  app.use('/api/auth', authRoutes);
+  app.use('/api/email', emailRoutes);
 
   // Fallback 404 handler for API routes
   app.use('/api/*', (req, res) => {

@@ -71,9 +71,19 @@ export default function CategoriesPage({ onSelectCategory }) {
                     {category.subcategories?.slice(0, 5).map((sub, sIdx) => (
                       <li key={sIdx} className="flex items-center gap-1.5 hover:text-[#003366]">
                         <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
-                        <Link href={`/products?category=${encodeURIComponent(sub.name)}`} className="truncate hover:underline">
-                          {sub.name}
-                        </Link>
+                        {onSelectCategory ? (
+                          <button
+                            type="button"
+                            onClick={() => onSelectCategory(sub.name)}
+                            className="truncate text-left hover:underline text-slate-700 hover:text-[#003366] cursor-pointer"
+                          >
+                            {sub.name}
+                          </button>
+                        ) : (
+                          <Link href={`/products?category=${encodeURIComponent(sub.name)}`} className="truncate hover:underline">
+                            {sub.name}
+                          </Link>
+                        )}
                       </li>
                     ))}
                     {(category.subcategories?.length || 0) > 5 && (
@@ -85,12 +95,24 @@ export default function CategoriesPage({ onSelectCategory }) {
                 </div>
               </div>
 
-              <Link
-                href={`/products?category=${encodeURIComponent(category.name)}`}
-                className="mt-5 w-full bg-[#003366] hover:bg-[#002244] text-white font-bold text-xs uppercase py-2.5 rounded transition flex items-center justify-center gap-1.5"
-              >
-                Browse {category.name} <ArrowRight className="w-3.5 h-3.5 text-[#f2cc4d]" />
-              </Link>
+              <div className="mt-5 flex gap-2">
+                {onSelectCategory ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectCategory(category.name)}
+                    className="flex-1 bg-[#003366] hover:bg-[#002244] text-white font-bold text-xs uppercase py-2.5 rounded transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    Filter {category.name} <ArrowRight className="w-3.5 h-3.5 text-[#f2cc4d]" />
+                  </button>
+                ) : (
+                  <Link
+                    href={`/products?category=${encodeURIComponent(category.name)}`}
+                    className="w-full bg-[#003366] hover:bg-[#002244] text-white font-bold text-xs uppercase py-2.5 rounded transition flex items-center justify-center gap-1.5"
+                  >
+                    Browse {category.name} <ArrowRight className="w-3.5 h-3.5 text-[#f2cc4d]" />
+                  </Link>
+                )}
+              </div>
             </div>
           );
         })}

@@ -21,16 +21,15 @@ export default function ContactPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.createLead({
+      await api.submitLead({
         name: form.name,
-        company: form.companyName,
+        company: form.companyName || 'Corporate Client',
+        phone: form.phone,
         mobile: form.phone,
         email: form.email,
         productInterest: form.productRequirements || 'General Sourcing Inquiry',
-        source: 'Contact Form',
-        status: 'New',
-        leadScore: 80,
-        notes: `Delivery/Spec Note: ${form.message}`
+        message: form.message ? `${form.productRequirements ? form.productRequirements + ' — ' : ''}${form.message}` : (form.productRequirements || 'General Sourcing Inquiry'),
+        source: 'contact'
       });
 
       setSuccess(true);
@@ -74,10 +73,16 @@ export default function ContactPage() {
           
           <div className="space-y-3">
             {[
-              { city: 'Chennai (Head Office)', addr: 'Polyhose Tower, Mount Road, Guindy, Chennai 600032', tel: '+91 44 6686 7700', email: 'sales@ntnbearing.in' },
-              { city: 'Mumbai Hub', addr: 'Unit No 1104, DLH Park, S V Road, Goregaon West, Mumbai 400062', tel: '+91 22 4531 8800', email: 'mumbai@ntnbearing.in' },
-              { city: 'Delhi Sourcing Desk', addr: '904, 9th Floor, International Trade Tower, Nehru Place, New Delhi 110019', tel: '+91 11 9980 1122', email: 'delhi@ntnbearing.in' },
-              { city: 'Kolkata Sourcing Desk', addr: 'Unit No 13, 7th Floor, Acropolis Office Complex, 1858/1 Rajdanga Main Road, Kolkata 700107', tel: '+91 33 2211 4455', email: 'kolkata@ntnbearing.in' }
+              { 
+                city: 'Bangalore (Head Office & Warehouse)', 
+                addr: 'No. 7, 4th Cross, Kalasipalya New Extension, Bangalore – 560002, India', 
+                tel: '+91 9900726939 / 8123836939', 
+                email: 'ue14.email@gmail.com',
+                tax: 'GST: 29AAGFU1019D1ZF'
+              },
+              { city: 'Mumbai Industrial Desk', addr: 'Unit No 1104, DLH Park, S V Road, Goregaon West, Mumbai 400062', tel: '+91 9900726939', email: 'ue14.email@gmail.com' },
+              { city: 'Delhi Sourcing Desk', addr: '904, 9th Floor, International Trade Tower, Nehru Place, New Delhi 110019', tel: '+91 9900726939', email: 'ue14.email@gmail.com' },
+              { city: 'Chennai Logistics Desk', addr: 'Mount Road, Guindy Industrial Estate, Chennai 600032', tel: '+91 9900726939', email: 'ue14.email@gmail.com' }
             ].map((loc, idx) => (
               <div key={idx} className="bg-slate-50 border p-3.5 rounded space-y-1">
                 <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs uppercase">
@@ -85,6 +90,11 @@ export default function ContactPage() {
                   {loc.city}
                 </div>
                 <p className="text-slate-500 text-[11px]">{loc.addr}</p>
+                {loc.tax && (
+                  <div className="text-[10px] text-amber-700 font-mono font-bold">
+                    {loc.tax}
+                  </div>
+                )}
                 <div className="font-mono text-[#003366] font-bold text-[11px] pt-1">
                   {loc.tel} • {loc.email}
                 </div>

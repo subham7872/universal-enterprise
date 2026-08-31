@@ -4,12 +4,15 @@ export const CATEGORY_TREE = [
     id: 'ball-bearings',
     subcategories: [
       { name: 'Deep Groove Ball Bearings Single Row', id: 'deep-groove' },
+      { name: 'Deep Groove Ball Bearings Double Row', id: 'deep-groove-double' },
       { name: 'Angular Contact Ball Bearings Single Row', id: 'angular-contact' },
+      { name: 'Angular Contact Ball Bearings Double Row', id: 'angular-contact-double' },
       { name: 'Four Point Contact Ball Bearings', id: 'four-point' },
-      { name: 'Self Aligning Ball Bearings', id: 'self-aligning' },
+      { name: 'Self Aligning Ball Bearing Double Row', id: 'self-aligning' },
       { name: 'Stainless Steel Ball Bearings', id: 'stainless-ball' },
       { name: 'Thin Section Ball Bearings', id: 'thin-section' },
       { name: 'Precision Spindle Bearings', id: 'precision-spindle' },
+      { name: 'Magneto Bearings', id: 'magneto-bearings' },
       { name: 'Bearings For Housings', id: 'bearings-for-housings' }
     ]
   },
@@ -165,12 +168,13 @@ export const CATEGORY_TREE = [
 ];
 
 export const INITIAL_BRANDS = [
+  'FAG (501)',
+  'INA (120)',
+  'Elges (15)',
   'NTN (35)',
   'NSK (28)',
   'THK (15)',
   'SKF (345)',
-  'FAG (501)',
-  'INA (120)',
   'TIMKEN (73)',
   'KOYO (42)',
   'IKO (18)',

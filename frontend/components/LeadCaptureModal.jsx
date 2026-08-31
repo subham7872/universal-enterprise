@@ -32,16 +32,15 @@ export default function LeadCaptureModal() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.createLead({
+      await api.submitLead({
         name: formData.name,
+        phone: formData.phone,
         mobile: formData.phone,
         email: formData.email,
         company: 'Website Portal Visitor',
         productInterest: formData.serviceInterest,
-        source: 'Homepage Modal',
-        status: 'New',
-        leadScore: 65,
-        notes: 'Lead captured via Homepage Exit/CAD Modal'
+        message: `Inquiry for ${formData.serviceInterest} via CAD/Pricing Modal`,
+        source: 'modal'
       });
 
       setSubmitted(true);

@@ -1,4 +1,7 @@
 /** @type {import('next').NextConfig} */
+const rawBackend = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:6060').replace(/\/+$/, '');
+const backendUrl = rawBackend.endsWith('/api') ? rawBackend.slice(0, -4) : rawBackend;
+
 const nextConfig = {
   reactStrictMode: true,
   images: {
@@ -17,7 +20,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:6060'}/api/:path*`,
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },

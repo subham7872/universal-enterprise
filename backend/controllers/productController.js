@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Product } from '../models/Product.js';
 import { INITIAL_PRODUCTS, INITIAL_BRANDS } from '../data/bearingsData.js';
 
@@ -6,13 +7,15 @@ let inMemoryProducts = [...INITIAL_PRODUCTS];
 
 export const getBrands = async (req, res, next) => {
   try {
-    try {
-      const distinctBrands = await Product.distinct('brand');
-      if (distinctBrands && distinctBrands.length > 0) {
-        return res.json({ success: true, data: distinctBrands });
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const distinctBrands = await Product.distinct('brand');
+        if (distinctBrands && distinctBrands.length > 0) {
+          return res.json({ success: true, data: distinctBrands });
+        }
+      } catch (e) {
+        // Fallback
       }
-    } catch (e) {
-      // Fallback
     }
     res.json({ success: true, data: INITIAL_BRANDS });
   } catch (error) {
@@ -50,119 +53,190 @@ export const getProducts = async (req, res, next) => {
     const limitNum = parseInt(limit, 10) || 10;
     const skip = (pageNum - 1) * limitNum;
 
-    try {
-      // Build dynamic MongoDB filter
-      const filter = {};
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const filter = {};
 
-      if (query && query.trim()) {
-        const cleanQuery = query.trim();
-        let regex;
-        if (matchType === 'exact') {
-          regex = new RegExp(`^${cleanQuery}$`, 'i');
-        } else if (matchType === 'startsWith') {
-          regex = new RegExp(`^${cleanQuery}`, 'i');
-        } else {
-          regex = new RegExp(cleanQuery, 'i');
+        if (query && query.trim()) {
+          const cleanQuery = query.trim();
+          let regex;
+          if (matchType === 'exact') {
+            regex = new RegExp(`^${cleanQuery}$`, 'i');
+          } else if (matchType === 'startsWith') {
+            regex = new RegExp(`^${cleanQuery}`, 'i');
+          } else {
+            regex = new RegExp(cleanQuery, 'i');
+          }
+
+          if (field === 'partNumber') {
+            filter.partNumber = regex;
+          } else if (field === 'name') {
+            filter.name = regex;
+          } else if (field === 'brand') {
+            filter.brand = regex;
+          } else if (field === 'series') {
+            filter.seriesGroup = regex;
+          } else {
+            filter.$or = [
+              { partNumber: regex },
+              { name: regex },
+              { brand: regex },
+              { category: regex },
+              { seriesGroup: regex }
+            ];
+          }
         }
 
-        if (field === 'partNumber') {
-          filter.partNumber = regex;
-        } else if (field === 'name') {
-          filter.name = regex;
-        } else if (field === 'brand') {
-          filter.brand = regex;
-        } else if (field === 'series') {
-          filter.seriesGroup = regex;
-        } else {
-          filter.$or = [
-            { partNumber: regex },
-            { name: regex },
-            { brand: regex },
-            { category: regex },
-            { seriesGroup: regex }
-          ];
+        if (category) {
+          const cat = category.trim();
+          const lower = cat.toLowerCase();
+
+          if (lower.includes('angular contact') && lower.includes('single row')) {
+            filter.$and = filter.$and || [];
+            filter.$and.push(
+              { $or: [{ category: /Angular Contact/i }, { subcategory: /Angular Contact/i }] },
+              { category: { $not: /Double Row/i } }
+            );
+          } else if (lower.includes('angular contact') && lower.includes('double row')) {
+            filter.$and = filter.$and || [];
+            filter.$and.push(
+              { $or: [{ category: /Angular Contact/i }, { subcategory: /Angular Contact/i }] },
+              { $or: [{ category: /Double Row/i }, { subcategory: /Double Row/i }, { seriesGroup: /Double Row/i }] }
+            );
+          } else if (lower.includes('deep groove') && lower.includes('double row')) {
+            filter.$and = filter.$and || [];
+            filter.$and.push(
+              { $or: [{ category: /Deep Groove/i }, { subcategory: /Deep Groove/i }] },
+              { $or: [{ category: /Double Row/i }, { subcategory: /Double Row/i }, { seriesGroup: /Double Row/i }] }
+            );
+          } else if (lower.includes('deep groove') && (lower.includes('single row') || !lower.includes('double'))) {
+            filter.$and = filter.$and || [];
+            filter.$and.push(
+              { $or: [{ category: /Deep Groove/i }, { subcategory: /Deep Groove/i }] },
+              { category: { $not: /Double Row/i } },
+              { subcategory: { $not: /Double Row/i } },
+              { seriesGroup: { $not: /Double Row/i } }
+            );
+          } else if (lower.includes('stainless steel')) {
+            filter.$or = [
+              { category: /Stainless Steel/i },
+              { subcategory: /Stainless Steel/i },
+              { material: /Stainless Steel/i },
+              { name: /Stainless Steel/i }
+            ];
+          } else if (lower.includes('self aligning')) {
+            filter.$or = [
+              { category: /Self Aligning/i },
+              { subcategory: /Self Aligning/i },
+              { seriesGroup: /Self Aligning/i },
+              { name: /Self Aligning/i }
+            ];
+          } else if (lower.includes('four point')) {
+            filter.$or = [
+              { category: /Four Point/i },
+              { subcategory: /Four Point/i },
+              { seriesGroup: /Four Point/i },
+              { name: /Four Point/i }
+            ];
+          } else if (lower.includes('magneto')) {
+            filter.$or = [
+              { category: /Magneto/i },
+              { subcategory: /Magneto/i },
+              { seriesGroup: /Magneto/i },
+              { name: /Magneto/i }
+            ];
+          } else if (lower.includes('housing')) {
+            filter.$or = [
+              { category: /Housing/i },
+              { subcategory: /Housing/i },
+              { seriesGroup: /Housing/i },
+              { name: /Housing/i }
+            ];
+          } else {
+            const catRegex = new RegExp(cat, 'i');
+            filter.$or = [
+              { category: catRegex },
+              { subcategory: catRegex },
+              { seriesGroup: catRegex }
+            ];
+          }
         }
+
+        if (brand) {
+          const cleanBrand = brand.replace(/\s*\(\d+\)\s*$/, '').trim();
+          filter.brand = new RegExp(`^${cleanBrand}$`, 'i');
+        }
+
+        if (idMin || idMax) {
+          filter.innerDiameter = {};
+          if (idMin) filter.innerDiameter.$gte = parseFloat(idMin);
+          if (idMax) filter.innerDiameter.$lte = parseFloat(idMax);
+        }
+
+        if (odMin || odMax) {
+          filter.outerDiameter = {};
+          if (odMin) filter.outerDiameter.$gte = parseFloat(odMin);
+          if (odMax) filter.outerDiameter.$lte = parseFloat(odMax);
+        }
+
+        if (wMin || wMax) {
+          filter.width = {};
+          if (wMin) filter.width.$gte = parseFloat(wMin);
+          if (wMax) filter.width.$lte = parseFloat(wMax);
+        }
+
+        if (material) {
+          filter.material = new RegExp(material.trim(), 'i');
+        }
+
+        if (sealType) {
+          filter.sealType = new RegExp(sealType.trim(), 'i');
+        }
+
+        if (cageType) {
+          filter.cageType = new RegExp(cageType.trim(), 'i');
+        }
+
+        if (stockStatus) {
+          filter.stockStatus = new RegExp(`^${stockStatus.trim()}$`, 'i');
+        }
+
+        if (priceMin || priceMax) {
+          filter.price = {};
+          if (priceMin) filter.price.$gte = parseFloat(priceMin);
+          if (priceMax) filter.price.$lte = parseFloat(priceMax);
+        }
+
+        if (origin) {
+          filter.countryOfOrigin = new RegExp(`^${origin.trim()}$`, 'i');
+        }
+
+        const sortConfig = {};
+        if (sort === 'price-asc') sortConfig.price = 1;
+        else if (sort === 'price-desc') sortConfig.price = -1;
+        else if (sort === 'partNumber-desc') sortConfig.partNumber = -1;
+        else sortConfig.partNumber = 1;
+
+        const total = await Product.countDocuments(filter);
+        const items = await Product.find(filter)
+          .sort(sortConfig)
+          .skip(skip)
+          .limit(limitNum)
+          .lean();
+
+        if (total > 0 || (items && items.length > 0)) {
+          return res.json({
+            success: true,
+            total,
+            page: pageNum,
+            limit: limitNum,
+            totalPages: Math.max(1, Math.ceil(total / limitNum)),
+            items
+          });
+        }
+      } catch (mongoError) {
+        console.warn('[MongoDB Product Query Fallback]:', mongoError.message);
       }
-
-      if (category) {
-        filter.category = new RegExp(category.trim(), 'i');
-      }
-
-      if (brand) {
-        const cleanBrand = brand.replace(/\s*\(\d+\)\s*$/, '').trim();
-        filter.brand = new RegExp(`^${cleanBrand}$`, 'i');
-      }
-
-      if (idMin || idMax) {
-        filter.innerDiameter = {};
-        if (idMin) filter.innerDiameter.$gte = parseFloat(idMin);
-        if (idMax) filter.innerDiameter.$lte = parseFloat(idMax);
-      }
-
-      if (odMin || odMax) {
-        filter.outerDiameter = {};
-        if (odMin) filter.outerDiameter.$gte = parseFloat(odMin);
-        if (odMax) filter.outerDiameter.$lte = parseFloat(odMax);
-      }
-
-      if (wMin || wMax) {
-        filter.width = {};
-        if (wMin) filter.width.$gte = parseFloat(wMin);
-        if (wMax) filter.width.$lte = parseFloat(wMax);
-      }
-
-      if (material) {
-        filter.material = new RegExp(material.trim(), 'i');
-      }
-
-      if (sealType) {
-        filter.sealType = new RegExp(sealType.trim(), 'i');
-      }
-
-      if (cageType) {
-        filter.cageType = new RegExp(cageType.trim(), 'i');
-      }
-
-      if (stockStatus) {
-        filter.stockStatus = new RegExp(`^${stockStatus.trim()}$`, 'i');
-      }
-
-      if (priceMin || priceMax) {
-        filter.price = {};
-        if (priceMin) filter.price.$gte = parseFloat(priceMin);
-        if (priceMax) filter.price.$lte = parseFloat(priceMax);
-      }
-
-      if (origin) {
-        filter.countryOfOrigin = new RegExp(`^${origin.trim()}$`, 'i');
-      }
-
-      // Sort configuration
-      const sortConfig = {};
-      if (sort === 'price-asc') sortConfig.price = 1;
-      else if (sort === 'price-desc') sortConfig.price = -1;
-      else if (sort === 'partNumber-desc') sortConfig.partNumber = -1;
-      else sortConfig.partNumber = 1;
-
-      const total = await Product.countDocuments(filter);
-      const items = await Product.find(filter)
-        .sort(sortConfig)
-        .skip(skip)
-        .limit(limitNum)
-        .lean();
-
-      if (total > 0 || (items && items.length > 0)) {
-        return res.json({
-          success: true,
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.max(1, Math.ceil(total / limitNum)),
-          items
-        });
-      }
-    } catch (mongoError) {
-      console.warn('[MongoDB Product Query Fallback]:', mongoError.message);
     }
 
     // In-memory fallback if MongoDB has not yet been populated
@@ -178,8 +252,60 @@ export const getProducts = async (req, res, next) => {
     }
 
     if (category) {
-      const cat = String(category).toLowerCase();
-      filtered = filtered.filter((p) => p.category.toLowerCase().includes(cat));
+      const cat = category.trim();
+      const lower = cat.toLowerCase();
+
+      if (lower.includes('angular contact') && lower.includes('single row')) {
+        filtered = filtered.filter((p) => {
+          const c = `${p.category || ''} ${p.subcategory || ''}`.toLowerCase();
+          return c.includes('angular contact') && !c.includes('double row');
+        });
+      } else if (lower.includes('angular contact') && lower.includes('double row')) {
+        filtered = filtered.filter((p) => {
+          const c = `${p.category || ''} ${p.subcategory || ''} ${p.seriesGroup || ''}`.toLowerCase();
+          return c.includes('angular contact') && c.includes('double row');
+        });
+      } else if (lower.includes('deep groove') && lower.includes('double row')) {
+        filtered = filtered.filter((p) => {
+          const c = `${p.category || ''} ${p.subcategory || ''} ${p.seriesGroup || ''}`.toLowerCase();
+          return (c.includes('deep groove') || p.seriesGroup?.toLowerCase().includes('double row')) && c.includes('double row');
+        });
+      } else if (lower.includes('deep groove') && (lower.includes('single row') || !lower.includes('double'))) {
+        filtered = filtered.filter((p) => {
+          const c = `${p.category || ''} ${p.subcategory || ''} ${p.seriesGroup || ''}`.toLowerCase();
+          return c.includes('deep groove') && !c.includes('double row');
+        });
+      } else if (lower.includes('stainless steel')) {
+        filtered = filtered.filter((p) => {
+          const c = `${p.category || ''} ${p.subcategory || ''} ${p.material || ''} ${p.name || ''}`.toLowerCase();
+          return c.includes('stainless steel') || c.includes('aisi 440');
+        });
+      } else if (lower.includes('self aligning')) {
+        filtered = filtered.filter((p) => {
+          const c = `${p.category || ''} ${p.subcategory || ''} ${p.seriesGroup || ''} ${p.name || ''}`.toLowerCase();
+          return c.includes('self aligning');
+        });
+      } else if (lower.includes('four point')) {
+        filtered = filtered.filter((p) => {
+          const c = `${p.category || ''} ${p.subcategory || ''} ${p.seriesGroup || ''} ${p.name || ''}`.toLowerCase();
+          return c.includes('four point');
+        });
+      } else if (lower.includes('magneto')) {
+        filtered = filtered.filter((p) => {
+          const c = `${p.category || ''} ${p.subcategory || ''} ${p.seriesGroup || ''} ${p.name || ''}`.toLowerCase();
+          return c.includes('magneto');
+        });
+      } else if (lower.includes('housing')) {
+        filtered = filtered.filter((p) => {
+          const c = `${p.category || ''} ${p.subcategory || ''} ${p.seriesGroup || ''} ${p.name || ''}`.toLowerCase();
+          return c.includes('housing');
+        });
+      } else {
+        filtered = filtered.filter((p) => {
+          const c = `${p.category || ''} ${p.subcategory || ''} ${p.seriesGroup || ''}`.toLowerCase();
+          return c.includes(lower);
+        });
+      }
     }
 
     if (brand) {
@@ -410,3 +536,137 @@ export const uploadProducts = async (req, res, next) => {
     next(error);
   }
 };
+
+export const createProduct = async (req, res, next) => {
+  try {
+    const productData = req.body;
+    if (!productData.partNumber || !productData.brand) {
+      return res.status(400).json({ success: false, message: 'Part number and brand are required.' });
+    }
+
+    const newId = productData.id || `${productData.brand.toLowerCase()}-${productData.partNumber.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+    const productToCreate = {
+      ...productData,
+      id: newId,
+      image: productData.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80'
+    };
+
+    try {
+      const created = await Product.create(productToCreate);
+      return res.status(201).json({ success: true, data: created });
+    } catch (dbErr) {
+      inMemoryProducts.unshift(productToCreate);
+      return res.status(201).json({ success: true, data: productToCreate });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    try {
+      const updated = await Product.findOneAndUpdate(
+        { $or: [{ id }, { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }, { partNumber: id }] },
+        { $set: updateData },
+        { new: true }
+      );
+
+      if (updated) {
+        return res.json({ success: true, data: updated });
+      }
+    } catch (dbErr) {
+      // Memory fallback
+    }
+
+    const idx = inMemoryProducts.findIndex(p => p.id === id || p.partNumber === id);
+    if (idx >= 0) {
+      inMemoryProducts[idx] = { ...inMemoryProducts[idx], ...updateData };
+      return res.json({ success: true, data: inMemoryProducts[idx] });
+    }
+
+    return res.status(404).json({ success: false, message: 'Product not found.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    try {
+      await Product.findOneAndDelete({
+        $or: [{ id }, { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }, { partNumber: id }]
+      });
+    } catch (dbErr) {
+      // Memory fallback
+    }
+
+    inMemoryProducts = inMemoryProducts.filter(p => p.id !== id && p.partNumber !== id);
+    res.json({ success: true, message: 'Product deleted successfully.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const uploadProductImage = async (req, res, next) => {
+  try {
+    const { imageBase64, filename = 'bearing.jpg', productId } = req.body;
+    if (!imageBase64) {
+      return res.status(400).json({ success: false, message: 'No image data provided.' });
+    }
+
+    const fs = await import('fs');
+    const path = await import('path');
+    const { fileURLToPath } = await import('url');
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Strip header if data URI
+    const matches = imageBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    const buffer = matches ? Buffer.from(matches[2], 'base64') : Buffer.from(imageBase64, 'base64');
+    
+    const ext = filename.split('.').pop() || 'jpg';
+    const cleanName = `${Date.now()}-${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const filePath = path.join(uploadsDir, cleanName);
+
+    fs.writeFileSync(filePath, buffer);
+    const imageUrl = `/uploads/${cleanName}`;
+
+    // If productId is supplied, update the product directly
+    if (productId) {
+      try {
+        await Product.findOneAndUpdate(
+          { $or: [{ id: productId }, { partNumber: productId }] },
+          { $set: { image: imageUrl } }
+        );
+      } catch (e) {
+        // Fallback
+      }
+
+      const idx = inMemoryProducts.findIndex(p => p.id === productId || p.partNumber === productId);
+      if (idx >= 0) {
+        inMemoryProducts[idx].image = imageUrl;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Bearing image uploaded successfully.',
+      imageUrl
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+

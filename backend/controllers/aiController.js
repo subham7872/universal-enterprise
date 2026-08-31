@@ -1,6 +1,6 @@
 import { Product } from '../models/Product.js';
 import { INITIAL_PRODUCTS } from '../data/bearingsData.js';
-import { generateSourcingResponse } from '../services/geminiService.js';
+import { generateSourcingResponse } from '../services/groqService.js';
 
 export const handleChat = async (req, res, next) => {
   try {

@@ -12,10 +12,6 @@ export default function Header({ quoteCount = 0, onOpenQuote }) {
   const navItems = [
     { href: '/', label: 'Home' },
     { href: '/products', label: 'Products' },
-    { href: '/categories', label: 'Categories' },
-    { href: '/compare', label: 'Compare' },
-    { href: '/tracking', label: 'Tracker' },
-    { href: '/brands', label: 'Brands' },
     { href: '/services', label: 'Services' },
     { href: '/about', label: 'About Us' },
     { href: '/contact', label: 'Contact' },
@@ -32,14 +28,14 @@ export default function Header({ quoteCount = 0, onOpenQuote }) {
             100% Genuine Certified Bearing Sourcing
           </span>
           <span className="hidden md:inline text-slate-500">|</span>
-          <span className="hidden md:inline text-slate-300">ISO 9001:2015 Registered Group</span>
+          <span className="hidden md:inline text-slate-300">GST: 29AAGFU1019D1ZF</span>
         </div>
         <div className="flex items-center gap-4 mt-1 sm:mt-0">
-          <a href="tel:+914466867700" className="hover:text-white transition flex items-center gap-1">
-            <Phone className="w-3 h-3 text-[#f2cc4d]" /> +91 44 6686 7700
+          <a href="tel:+919900726939" className="hover:text-white transition flex items-center gap-1">
+            <Phone className="w-3 h-3 text-[#f2cc4d]" /> +91 9900726939 / 8123836939
           </a>
-          <a href="mailto:sales@ntnbearing.in" className="hover:text-white transition flex items-center gap-1">
-            <Mail className="w-3 h-3 text-[#f2cc4d]" /> sales@ntnbearing.in
+          <a href="mailto:ue14.email@gmail.com" className="hover:text-white transition flex items-center gap-1">
+            <Mail className="w-3 h-3 text-[#f2cc4d]" /> ue14.email@gmail.com
           </a>
         </div>
       </div>

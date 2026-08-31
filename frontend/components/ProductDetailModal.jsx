@@ -30,6 +30,34 @@ export default function ProductDetailModal({ product, onClose, onAddToQuote }) {
         {/* Modal Body */}
         <div className="p-6 space-y-6 text-xs">
           
+          {/* Product Image & Main Summary */}
+          <div className="flex flex-col sm:flex-row items-center gap-5 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <div className="w-28 h-28 bg-white border-2 border-slate-200 rounded-md flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+              <img
+                src={product.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80'}
+                alt={product.partNumber}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = '/favicon.svg';
+                }}
+              />
+            </div>
+            <div className="space-y-1.5 flex-1">
+              <div className="flex justify-between items-start">
+                <span className="text-[10px] bg-slate-200 text-slate-800 font-bold px-2 py-0.5 rounded font-mono uppercase">
+                  {product.brand} • {product.category}
+                </span>
+                <span className="text-emerald-700 font-bold text-xs">● {product.stockStatus || 'Available'}</span>
+              </div>
+              <h4 className="text-base font-black text-[#003366]">{product.partNumber}</h4>
+              <p className="text-xs text-slate-500">{product.seriesGroup || 'Standard Series'} • {product.countryOfOrigin || 'Germany/Japan'}</p>
+              <div className="text-sm font-black text-slate-900 font-mono pt-1">
+                Estimated Rate: <span className="text-[#003366]">₹{product.price}</span>
+              </div>
+            </div>
+          </div>
+          
           {/* Key Metric Highlights */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
             <div className="bg-slate-50 border p-3 rounded">

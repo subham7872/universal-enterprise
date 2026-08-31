@@ -11,6 +11,8 @@ import { useApp } from '../components/AppClientWrapper';
 import api from '../lib/api';
 import AdminUpload from '../components/AdminUpload';
 import PremiumHomeAdditions from '../components/PremiumHomeAdditions';
+import OrderTrackingPage from '../components/OrderTrackingPage';
+import CategoriesPage from '../components/CategoriesPage';
 import { CATEGORY_TREE, INITIAL_BRANDS } from '../data/categoriesData';
 
 export default function HomePage() {
@@ -546,6 +548,7 @@ export default function HomePage() {
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="bg-[#003366] text-white font-bold border-b text-[10px] uppercase font-mono">
+                          <th className="p-3 text-center">Image</th>
                           <th className="p-3">Part Number</th>
                           <th className="p-3">Brand</th>
                           <th className="p-3">Category</th>
@@ -563,14 +566,41 @@ export default function HomePage() {
 
                           return (
                             <tr key={p.id || p.partNumber} className="hover:bg-slate-50 transition">
-                              <td className="p-3 font-bold text-[#003366] font-mono">
+                              {/* Image Thumbnail */}
+                              <td className="p-2.5 text-center">
                                 <button
+                                  type="button"
                                   onClick={() => setSelectedProduct(p)}
-                                  className="hover:underline font-black"
+                                  className="w-12 h-12 bg-white rounded-md border border-slate-200 p-0.5 inline-flex items-center justify-center overflow-hidden hover:border-[#f2cc4d] hover:shadow-md transition cursor-pointer group"
+                                  title="Click to view full specifications"
                                 >
-                                  {p.partNumber}
+                                  <img
+                                    src={p.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80'}
+                                    alt={p.partNumber}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-150"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = '/favicon.svg';
+                                    }}
+                                  />
                                 </button>
                               </td>
+
+                              {/* Part Number & Name (Clickable) */}
+                              <td className="p-3 font-mono">
+                                <button
+                                  onClick={() => setSelectedProduct(p)}
+                                  className="text-left group cursor-pointer block"
+                                >
+                                  <span className="font-extrabold text-[#003366] group-hover:text-amber-600 group-hover:underline text-xs block">
+                                    {p.partNumber}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-sans truncate block max-w-[150px]">
+                                    {p.name || `${p.brand} Precision Bearing`}
+                                  </span>
+                                </button>
+                              </td>
+
                               <td className="p-3">
                                 <span className="bg-slate-100 border px-2 py-0.5 rounded font-black text-slate-700 text-[10px]">
                                   {p.brand}
@@ -605,7 +635,7 @@ export default function HomePage() {
 
                                   <button
                                     onClick={() => addToQuote(p, qty)}
-                                    className="bg-[#f2cc4d] hover:bg-[#e0b434] text-slate-950 px-2.5 py-1 rounded font-black text-[10px] uppercase shadow-2xs transition"
+                                    className="bg-[#f2cc4d] hover:bg-[#e0b434] text-slate-950 px-2.5 py-1 rounded font-black text-[10px] uppercase shadow-2xs transition cursor-pointer"
                                   >
                                     Add Quote
                                   </button>
@@ -632,8 +662,29 @@ export default function HomePage() {
                     const isCompared = compareItems.some((c) => c.id === p.id || c.partNumber === p.partNumber);
 
                     return (
-                      <div key={p.id || p.partNumber} className="bg-white border rounded p-4 flex flex-col justify-between hover:shadow-md transition text-slate-800 space-y-3">
+                      <div key={p.id || p.partNumber} className="bg-white border rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition text-slate-800 space-y-3">
                         <div>
+                          {/* Image Thumbnail in Grid */}
+                          <div
+                            onClick={() => setSelectedProduct(p)}
+                            className="w-full h-36 bg-slate-50 rounded border border-slate-200 mb-3 flex items-center justify-center overflow-hidden cursor-pointer group relative shadow-inner"
+                          >
+                            <img
+                              src={p.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80'}
+                              alt={p.partNumber}
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-200"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = '/favicon.svg';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-[#003366]/0 group-hover:bg-[#003366]/20 transition flex items-center justify-center">
+                              <span className="opacity-0 group-hover:opacity-100 bg-[#003366] text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider transition">
+                                View Specs
+                              </span>
+                            </div>
+                          </div>
+
                           <div className="flex justify-between items-start">
                             <span className="bg-slate-100 text-slate-700 font-black text-[9px] px-2 py-0.5 rounded uppercase">
                               {p.brand} GENUINE
@@ -641,7 +692,12 @@ export default function HomePage() {
                             <span className="text-[10px] font-bold text-emerald-600">● {p.stockStatus}</span>
                           </div>
 
-                          <h4 className="font-extrabold text-[#003366] text-base mt-2">{p.partNumber}</h4>
+                          <h4
+                            onClick={() => setSelectedProduct(p)}
+                            className="font-extrabold text-[#003366] hover:text-amber-600 text-base mt-2 cursor-pointer hover:underline"
+                          >
+                            {p.partNumber}
+                          </h4>
                           <p className="text-xs text-slate-500 truncate">{p.name}</p>
 
                           <div className="bg-slate-50 rounded p-2.5 mt-2 space-y-1 font-mono text-[11px] text-slate-700">
@@ -669,13 +725,13 @@ export default function HomePage() {
                           <div className="grid grid-cols-2 gap-2">
                             <button
                               onClick={() => setSelectedProduct(p)}
-                              className="bg-slate-100 hover:bg-slate-200 border rounded py-1.5 text-[11px] font-bold uppercase text-slate-700"
+                              className="bg-slate-100 hover:bg-slate-200 border rounded py-1.5 text-[11px] font-bold uppercase text-slate-700 cursor-pointer"
                             >
                               Specs
                             </button>
                             <button
                               onClick={() => toggleCompare(p)}
-                              className={`border rounded py-1.5 text-[11px] font-bold uppercase ${isCompared ? 'bg-amber-400 border-amber-500 text-slate-950 font-black' : 'bg-white text-slate-500'}`}
+                              className={`border rounded py-1.5 text-[11px] font-bold uppercase cursor-pointer ${isCompared ? 'bg-amber-400 border-amber-500 text-slate-950 font-black' : 'bg-white text-slate-500'}`}
                             >
                               {isCompared ? 'Comparing' : 'Compare'}
                             </button>
@@ -703,10 +759,10 @@ export default function HomePage() {
                     </span>
                     <div className="flex items-center gap-3">
                       <Link
-                        href="/compare"
+                        href="/services#compare-desk"
                         className="bg-[#f2cc4d] text-slate-950 font-black text-[11px] px-3 py-1 rounded uppercase tracking-wider hover:bg-yellow-500"
                       >
-                        Open Full Comparison Page &rarr;
+                        Open Comparison Desk in Services &rarr;
                       </Link>
                       <button onClick={() => setCompareItems([])} className="text-[10px] text-slate-400 hover:text-red-400 font-bold uppercase">
                         Clear
@@ -763,6 +819,163 @@ export default function HomePage() {
 
       {/* 4. Industries & Global Brand Additions */}
       <PremiumHomeAdditions />
+
+      {/* 5. Complete Engineering Categories Directory */}
+      <section id="categories-directory" className="space-y-4">
+        <CategoriesPage
+          onSelectCategory={(catName) => {
+            setSelectedCategory(catName);
+            setPage(1);
+            window.scrollTo({ top: 350, behavior: 'smooth' });
+          }}
+        />
+      </section>
+
+      {/* 6. Authorized Global Bearing Brands Showcase */}
+      <section className="bg-white border border-slate-200 rounded-lg p-6 sm:p-8 space-y-6 shadow-xs">
+        <div className="border-b border-slate-200 pb-4 flex flex-wrap justify-between items-end gap-3">
+          <div>
+            <span className="text-[10px] bg-[#f2cc4d] text-slate-950 font-bold px-2 py-0.5 rounded uppercase font-mono tracking-wider">
+              OEM AUTHORIZED PARTNERSHIPS
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black uppercase text-[#003366] tracking-tight mt-1.5">
+              Authorized Global Power Brands
+            </h2>
+            <p className="text-slate-500 text-xs sm:text-sm mt-1">
+              Direct sourcing channels ensuring 100% genuine factory certification, manufacturer warranties, and serial validation.
+            </p>
+          </div>
+          <Link
+            href="/products"
+            className="text-xs font-bold text-[#003366] hover:text-amber-600 uppercase flex items-center gap-1"
+          >
+            Explore Complete Bearing Inventory &rarr;
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              slug: 'fag',
+              name: 'FAG / INA',
+              country: 'Germany',
+              tagline: 'Schaeffler High Load Engineering',
+              desc: 'German precision engineered generation C bearings, needle rollers, and hydraulic dismounting pullers.',
+              series: ['Generation C Deep Groove', 'Needle Rollers', 'Arcanol Greases']
+            },
+            {
+              slug: 'skf',
+              name: 'SKF',
+              country: 'Sweden',
+              tagline: 'Global Benchmark in Bearing Tech',
+              desc: 'Pioneers in explorer series bearings, solid oil food line, and condition monitoring systems.',
+              series: ['Explorer Deep Groove', 'W-Series Stainless', 'Solid Oil Bearings']
+            },
+            {
+              slug: 'nsk',
+              name: 'NSK',
+              country: 'Japan',
+              tagline: 'World Leader in Motion & Control',
+              desc: 'High-precision deep groove ball bearings, super precision machine tool spindles, and linear guides.',
+              series: ['7000 Series Spindles', 'Deep Groove 6200/6300', 'LH Linear Guides']
+            },
+            {
+              slug: 'ntn',
+              name: 'NTN',
+              country: 'Japan',
+              tagline: 'High Thermal Limits & Long Life',
+              desc: 'Extensive thin section deep groove ball bearings (16001 - 16032) and spherical roller units.',
+              series: ['16001 - 16032 Series', 'Pillow Block Units', 'Tapered Rollers']
+            },
+            {
+              slug: 'thk',
+              name: 'THK',
+              country: 'Japan',
+              tagline: 'Pioneers of Linear Motion Systems',
+              desc: 'Advanced LM guides, ground ball screws, cam followers, and caged ball technologies.',
+              series: ['HSR Series LM Guides', 'BNK Ground Ball Screws', 'Cam Followers']
+            },
+            {
+              slug: 'timken',
+              name: 'TIMKEN',
+              country: 'USA',
+              tagline: 'Leader in Tapered Roller Bearings',
+              desc: 'Engineered tapered roller bearings, heavy industrial housings, and aerospace grade components.',
+              series: ['Tapered Roller Series', 'Food Grade Stainless', 'Spherical Units']
+            },
+            {
+              slug: 'nachi',
+              name: 'NACHI',
+              country: 'Japan',
+              tagline: 'Precision Robotics & Automotive',
+              desc: 'Specialized automotive air conditioning bearings, robotic arm actuators, and high-speed bearings.',
+              series: ['30BG/35BG Series', '38BVV Automotive', 'High Speed Radial']
+            },
+            {
+              slug: 'koyo',
+              name: 'KOYO / JTEKT',
+              country: 'Japan',
+              tagline: 'Extreme Environment Solutions',
+              desc: 'Ceramic ball bearings, high-temperature series, and heavy machinery transmission bearings.',
+              series: ['DG Automotive Series', 'Ceramic Hybrids', 'Agricultural Units']
+            }
+          ].map((b) => (
+            <div
+              key={b.slug}
+              className="bg-slate-50 p-5 rounded-lg border border-slate-200 shadow-2xs flex flex-col justify-between space-y-3 hover:border-[#003366] hover:bg-white transition"
+            >
+              <div>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-xl font-black text-[#003366]">{b.name}</span>
+                    <span className="block text-[11px] font-bold text-amber-600 mt-0.5">{b.tagline}</span>
+                  </div>
+                  <span className="bg-white font-mono text-[9px] font-bold px-2 py-0.5 rounded border text-slate-700">
+                    {b.country}
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-600 mt-2.5 leading-relaxed">{b.desc}</p>
+
+                <div className="mt-2.5 space-y-1">
+                  <span className="text-[9px] uppercase font-bold text-slate-400">Featured Series:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {b.series.map((s, idx) => (
+                      <span key={idx} className="bg-white border text-slate-700 text-[10px] font-mono px-1.5 py-0.5 rounded">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedBrand(b.name.split('/')[0].trim());
+                    window.scrollTo({ top: 350, behavior: 'smooth' });
+                  }}
+                  className="flex-1 bg-[#003366] hover:bg-[#002244] text-white text-center py-1.5 rounded text-[10px] font-bold uppercase transition cursor-pointer"
+                >
+                  Filter {b.name.split('/')[0].trim()}
+                </button>
+                <Link
+                  href={`/products?brand=${encodeURIComponent(b.name.split('/')[0].trim())}`}
+                  className="flex-1 bg-[#f2cc4d] hover:bg-[#e0b434] text-slate-950 text-center py-1.5 rounded text-[10px] font-black uppercase transition flex items-center justify-center"
+                >
+                  Browse Catalog
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 6. Real-Time Sourcing & Quote Tracker Section */}
+      <section id="tracker-section" className="space-y-4">
+        <OrderTrackingPage />
+      </section>
 
     </div>
   );

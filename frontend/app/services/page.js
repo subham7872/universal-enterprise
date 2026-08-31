@@ -1,14 +1,15 @@
+"use client";
+
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, Wrench, ShieldCheck, Truck, Cpu, Layers } from 'lucide-react';
+import { ArrowRight, Wrench, ShieldCheck, Truck, Cpu, Layers, Activity } from 'lucide-react';
 import PremiumServicesAdditions from '../../components/PremiumServicesAdditions';
-
-export const metadata = {
-  title: 'Engineering & Sourcing Services — Universal Enterprise',
-  description: 'Specialized bearing sourcing, obsolete replacements, CAD dimension verification, and rapid logistics.',
-};
+import CompareSpecsPage from '../../components/CompareSpecsPage';
+import { useApp } from '../../components/AppClientWrapper';
 
 export default function ServicesPage() {
+  const { compareItems, setCompareItems, toggleCompare, addToQuote, setSelectedProduct } = useApp();
+
   const services = [
     {
       title: 'Precision Bearing Sourcing',
@@ -38,6 +39,7 @@ export default function ServicesPage() {
 
   return (
     <div className="space-y-8 font-sans text-slate-800">
+      {/* 1. Header Banner */}
       <div className="bg-[#003366] text-white p-8 rounded-lg border-b-4 border-[#f2cc4d] space-y-2">
         <span className="text-[10px] bg-[#f2cc4d] text-slate-950 font-bold px-2 py-0.5 rounded uppercase font-mono">
           ENGINEERING & LOGISTICS CAPABILITIES
@@ -50,6 +52,7 @@ export default function ServicesPage() {
         </p>
       </div>
 
+      {/* 2. Primary Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {services.map((serv, idx) => (
           <div key={idx} className="bg-white border rounded-lg p-5 flex flex-col justify-between hover:border-[#003366] transition shadow-2xs">
@@ -67,7 +70,19 @@ export default function ServicesPage() {
         ))}
       </div>
 
+      {/* 3. Specialized Capabilities Addition */}
       <PremiumServicesAdditions />
+
+      {/* 4. Interactive Bearing Specs Comparison Desk Section */}
+      <section id="compare-desk" className="space-y-4">
+        <CompareSpecsPage
+          compareItems={compareItems}
+          onRemoveItem={(item) => toggleCompare(item)}
+          onClearAll={() => setCompareItems([])}
+          onAddToQuote={(item) => addToQuote(item)}
+          onViewDetails={(item) => setSelectedProduct(item)}
+        />
+      </section>
     </div>
   );
 }

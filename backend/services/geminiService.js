@@ -36,7 +36,7 @@ export const generateSourcingResponse = async (messages, matchedProducts, databa
     } else if (upper.includes('NSK') || upper.includes('SPINDLE') || upper.includes('7008')) {
       replyText += `We carry NSK Super Precision Angular Contact Spindle bearings (e.g., 7008CTRDULP3 @ ₹8,900) rated up to 32,000 RPM for high-speed CNC machinery.`;
     } else if (upper.includes('PRICE') || upper.includes('QUOTE') || upper.includes('RFQ')) {
-      replyText += `You can add any product to our on-screen Request Quote basket and submit for direct dispatch via WhatsApp (+91 44 6686 7700) or our centralized CRM desk.`;
+      replyText += `You can add any product to our on-screen Request Quote basket and submit for direct dispatch via WhatsApp (+91 9900726939) or our centralized CRM desk.`;
     } else {
       replyText += `I am the Universal Enterprise AI Technical Assistant. I can check dimensions, verify dynamic/static load limits, find cross-brand equivalents (NSK, THK, NTN, SKF, FAG), and calculate quote estimates. How can I assist your engineering team today?`;
     }
@@ -53,9 +53,10 @@ You are the elite Technical AI Sourcing Engineer for "UNIVERSAL ENTERPRISE" (htt
 
 --- AUTHORIZED BRANDS & CORE PROFILE ---
 - Authorized Supplier for: NTN, NSK, THK, SKF, FAG, INA, TIMKEN, KOYO, IKO, NACHI, HIWIN, SCHAEFFLER.
-- Contact: sales@ntnbearing.in | Phone: +91 44 6686 7700
-- Head Office: Polyhose Tower, Mount Road, Guindy, Chennai 600032
-- Hubs: Mumbai, Delhi, Kolkata, Chennai.
+- Contact: ue14.email@gmail.com | Phone: +91 9900726939 / 8123836939 | WhatsApp: +91 9900726939
+- Head Office: No. 7, 4th Cross, Kalasipalya New Extension, Bangalore – 560002, India
+- GST No.: 29AAGFU1019D1ZF
+- Hubs: Bangalore, Mumbai, Delhi, Kolkata, Chennai.
 
 --- REAL-TIME DATABASE INVENTORY SAMPLES ---
 ${JSON.stringify(databaseSample, null, 2)}

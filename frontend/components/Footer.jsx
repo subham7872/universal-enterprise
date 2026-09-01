@@ -61,7 +61,7 @@ export default function Footer() {
                 <Instagram className="w-4 h-4" />
               </a>
               <a
-                href="https://www.linkedin.com"
+                href="https://www.linkedin.com/company/universalenterprise/posts/?feedView=all"
                 target="_blank"
                 rel="noreferrer"
                 aria-label="LinkedIn"
@@ -70,7 +70,7 @@ export default function Footer() {
                 <Linkedin className="w-4 h-4" />
               </a>
               <a
-                href="https://twitter.com"
+                href="https://x.com/universal2332"
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Twitter / X"

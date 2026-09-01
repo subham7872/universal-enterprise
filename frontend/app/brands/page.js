@@ -35,11 +35,19 @@ export default function BrandsIndexPage() {
     },
     {
       slug: 'fag',
-      name: 'FAG / INA',
+      name: 'FAG',
       country: 'Germany',
-      tagline: 'Schaeffler High Load Engineering',
-      desc: 'German precision engineered generation C bearings, needle rollers, and hydraulic dismounting pullers.',
-      series: ['Generation C Deep Groove', 'Needle Rollers', 'Arcanol Greases']
+      tagline: 'Schaeffler High Load & Spherical Roller Engineering',
+      desc: 'German precision engineered spherical roller bearings (22200, 22300, 23000, 24000), X-life high capacity series, and cylindrical rollers.',
+      series: ['24100 & 23100 Sphericals', '22200 & 22300 X-Life', 'Vibrating Screen T41A', 'Solid Brass Cages (M/MB)']
+    },
+    {
+      slug: 'ina',
+      name: 'INA',
+      country: 'Germany',
+      tagline: 'Schaeffler Precision Needle Roller Pioneer',
+      desc: 'World standard needle roller and cage assemblies, drawn cup HK/BK units, ZARN combined precision bearings, and ground inner rings.',
+      series: ['K Radial Cage Assemblies', 'HK/BK Drawn Cups', 'ZARN/ZARF Screw Drives', 'IR/LR Precision Rings']
     }
   ];
 

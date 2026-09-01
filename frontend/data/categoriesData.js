@@ -20,6 +20,7 @@ export const CATEGORY_TREE = [
     name: 'Roller Bearings',
     id: 'roller-bearings',
     subcategories: [
+      { name: 'Spherical Roller Bearings', id: 'spherical-roller' },
       { name: 'Needle Roller Bearings', id: 'needle-roller' },
       { name: 'Needle Roller And Cage Assemblies', id: 'needle-cage' },
       { name: 'Cylindrical Roller Bearings Single Row', id: 'cylindrical-single' },
@@ -27,6 +28,20 @@ export const CATEGORY_TREE = [
       { name: 'Cylindrical Roller Bearings Multi Row', id: 'cylindrical-multi' },
       { name: 'Full Complement Cylindrical Roller Bearings', id: 'full-complement' },
       { name: 'Combined Needle Roller Bearings', id: 'combined-needle' },
+      { name: 'Cylindrical Roller Thrust Collar', id: 'cylindrical-thrust-collar' },
+      { name: 'Tapered Roller Bearing Single Row', id: 'tapered-single' },
+      { name: 'Tapered Roller Bearing Single Row (paired metric)', id: 'tapered-single-paired-metric' },
+      { name: 'Tapered Roller Double Row', id: 'tapered-double' },
+      { name: 'Tapered Roller Bearing Multi Row', id: 'tapered-multi' },
+      { name: 'Cup for Tapered Roller Bearings Single Row', id: 'tapered-single-cup' },
+      { name: 'Cup for Tapered Roller Bearings Double Row', id: 'tapered-double-cup' },
+      { name: 'Cone for Tapered Roller Bearings Single Row', id: 'tapered-single-cone' },
+      { name: 'Cone for Tapered Roller Bearings Double Row', id: 'tapered-double-cone' },
+      { name: 'Tapered Roller Bearing Spacer', id: 'tapered-spacer' },
+      { name: 'Tapered Roller Bearing Assembly', id: 'tapered-assembly' },
+      { name: 'Tapered Roller Thrust Bearing Single Direction', id: 'tapered-thrust-single' },
+      { name: 'Tapered Roller Thrust Bearing Double Direction', id: 'tapered-thrust-double' },
+      { name: 'CARB™ Roller Bearing', id: 'carb-roller' },
       { name: 'Track Rollers', id: 'track-rollers' }
     ]
   },

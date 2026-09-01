@@ -53,6 +53,10 @@ export default function CrmDashboard() {
   // Product CRM States
   const [productSearch, setProductSearch] = useState('');
   const [productBrandFilter, setProductBrandFilter] = useState('All');
+  const [productCategoryFilter, setProductCategoryFilter] = useState('All');
+  const [productCurrentPage, setProductCurrentPage] = useState(1);
+  const [productPageSize, setProductPageSize] = useState(20);
+  const [jumpPageInput, setJumpPageInput] = useState('');
   const [editingProduct, setEditingProduct] = useState(null);
   const [showNewProductModal, setShowNewProductModal] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -672,437 +676,847 @@ export default function CrmDashboard() {
         )}
 
         {/* ----------------- 4. PRODUCTS CATALOG CRM ----------------- */}
-        {activeSubTab === 'products' && (
-          <div className="space-y-4">
-            
-            {/* Products Toolbar */}
-            <div className="flex flex-wrap justify-between items-center gap-3 bg-white p-3.5 rounded-lg border border-slate-200">
-              <div className="flex items-center gap-3 flex-1 min-w-[240px]">
-                <Search className="w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search catalog by part number, brand, category..."
-                  value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
-                  className="w-full text-xs bg-transparent border-none focus:outline-none"
-                />
+        {activeSubTab === 'products' && (() => {
+          // Dynamic brand and category options from catalog
+          const availableBrands = ['All', ...Array.from(new Set(productsList.map(p => p.brand).filter(Boolean))).sort()];
+          const availableCategories = ['All', ...Array.from(new Set(productsList.map(p => p.category).filter(Boolean))).sort()];
+
+          // Filter products based on search, brand, category
+          const filteredProducts = productsList.filter(p => {
+            const q = productSearch.toLowerCase().trim();
+            const matchQuery = !q || 
+              p.partNumber?.toLowerCase().includes(q) || 
+              p.brand?.toLowerCase().includes(q) || 
+              p.category?.toLowerCase().includes(q) ||
+              p.material?.toLowerCase().includes(q) ||
+              p.application?.toLowerCase().includes(q) ||
+              p.description?.toLowerCase().includes(q);
+            const matchBrand = productBrandFilter === 'All' || p.brand?.toUpperCase() === productBrandFilter.toUpperCase();
+            const matchCategory = productCategoryFilter === 'All' || p.category === productCategoryFilter;
+            return matchQuery && matchBrand && matchCategory;
+          });
+
+          const totalFiltered = filteredProducts.length;
+          const totalPages = Math.ceil(totalFiltered / productPageSize) || 1;
+          const currentPageSafe = Math.min(Math.max(productCurrentPage, 1), totalPages);
+          const startIndex = (currentPageSafe - 1) * productPageSize;
+          const endIndex = Math.min(startIndex + productPageSize, totalFiltered);
+          const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+          // Generate smart visible page range
+          const getVisiblePages = () => {
+            const pages = [];
+            const delta = 2;
+            const left = Math.max(1, currentPageSafe - delta);
+            const right = Math.min(totalPages, currentPageSafe + delta);
+
+            for (let i = left; i <= right; i++) {
+              pages.push(i);
+            }
+            return { pages, showFirst: left > 1, showLast: right < totalPages };
+          };
+
+          const { pages: visiblePages, showFirst, showLast } = getVisiblePages();
+
+          return (
+            <div className="space-y-4">
+              
+              {/* Products Filter & Search Toolbar */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  {/* Search Bar */}
+                  <div className="flex items-center gap-2.5 flex-1 min-w-[280px] bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 focus-within:border-[#003366] focus-within:bg-white transition">
+                    <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search 9,678+ bearings by part number, brand, category, dimensions..."
+                      value={productSearch}
+                      onChange={(e) => {
+                        setProductSearch(e.target.value);
+                        setProductCurrentPage(1);
+                      }}
+                      className="w-full text-xs bg-transparent border-none focus:outline-none text-slate-800 placeholder:text-slate-400 font-medium"
+                    />
+                    {productSearch && (
+                      <button 
+                        onClick={() => { setProductSearch(''); setProductCurrentPage(1); }}
+                        className="text-slate-400 hover:text-slate-700 text-xs font-bold"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Brand & Category Filters */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Brand:</span>
+                      <select
+                        value={productBrandFilter}
+                        onChange={(e) => {
+                          setProductBrandFilter(e.target.value);
+                          setProductCurrentPage(1);
+                        }}
+                        className="text-xs py-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-700 focus:outline-none focus:border-[#003366]"
+                      >
+                        <option value="All">All Brands ({availableBrands.length - 1})</option>
+                        {availableBrands.filter(b => b !== 'All').map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Category:</span>
+                      <select
+                        value={productCategoryFilter}
+                        onChange={(e) => {
+                          setProductCategoryFilter(e.target.value);
+                          setProductCurrentPage(1);
+                        }}
+                        className="text-xs py-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-lg font-semibold text-slate-700 focus:outline-none focus:border-[#003366] max-w-[200px] truncate"
+                      >
+                        <option value="All">All Categories ({availableCategories.length - 1})</option>
+                        {availableCategories.filter(c => c !== 'All').map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <button
+                      onClick={() => setShowNewProductModal(true)}
+                      className="bg-[#003366] hover:bg-[#002244] text-white text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 shadow-xs transition"
+                    >
+                      <Plus className="w-4 h-4" /> Add New Bearing
+                    </button>
+                  </div>
+                </div>
+
+                {/* Summary Info & Pagination Top Bar */}
+                <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 font-medium">
+                  <div className="flex items-center gap-2">
+                    <span>
+                      Showing <strong className="text-slate-900 font-bold">{totalFiltered > 0 ? startIndex + 1 : 0} - {endIndex}</strong> of <strong className="text-slate-900 font-bold">{totalFiltered.toLocaleString()}</strong> matching bearings
+                    </span>
+                    <span className="text-slate-300">|</span>
+                    <span>Total Database: <strong className="text-[#003366] font-bold">{productsList.length.toLocaleString()}</strong> units</span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-400 text-[11px]">Click any bearing row to inspect or update details & image</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[11px] text-slate-500">Per page:</span>
+                      <select
+                        value={productPageSize}
+                        onChange={(e) => {
+                          setProductPageSize(Number(e.target.value));
+                          setProductCurrentPage(1);
+                        }}
+                        className="text-xs p-1 bg-slate-50 border rounded font-semibold text-slate-700"
+                      >
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <select
-                  value={productBrandFilter}
-                  onChange={(e) => setProductBrandFilter(e.target.value)}
-                  className="text-xs p-1.5 bg-slate-50 border rounded font-semibold text-slate-700"
-                >
-                  <option value="All">All Brands</option>
-                  <option value="FAG">FAG</option>
-                  <option value="INA">INA</option>
-                  <option value="Elges">Elges</option>
-                  <option value="NTN">NTN</option>
-                  <option value="NSK">NSK</option>
-                  <option value="THK">THK</option>
-                  <option value="SKF">SKF</option>
-                </select>
+              {/* Products Table (Clickable Rows) */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#003366] text-white text-[10px] uppercase font-mono tracking-wider">
+                      <tr>
+                        <th className="p-3">Image</th>
+                        <th className="p-3">Part Number</th>
+                        <th className="p-3">Brand</th>
+                        <th className="p-3">Category</th>
+                        <th className="p-3">Dimensions (ID × OD × W)</th>
+                        <th className="p-3">Stock Units</th>
+                        <th className="p-3">Unit Price (INR)</th>
+                        <th className="p-3 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      {paginatedProducts.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="p-12 text-center text-slate-400 font-sans">
+                            <div className="flex flex-col items-center justify-center gap-2">
+                              <Search className="w-8 h-8 text-slate-300" />
+                              <p className="font-bold text-slate-600 text-sm">No bearings found matching your search</p>
+                              <p className="text-xs">Try adjusting your keyword, brand, or category filters.</p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedProducts.map((p) => (
+                          <tr 
+                            key={p.id || p._id || p.partNumber} 
+                            onClick={() => setEditingProduct({ ...p })}
+                            className="cursor-pointer hover:bg-amber-50/70 transition group"
+                            title="Click to view details and update bearing"
+                          >
+                            <td className="p-2.5">
+                              <div className="w-11 h-11 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-[#003366] transition">
+                                <img
+                                  src={p.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80'}
+                                  alt={p.partNumber}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = '/favicon.svg';
+                                  }}
+                                />
+                              </div>
+                            </td>
+                            <td className="p-3 font-mono font-bold text-[#003366] group-hover:text-blue-700 text-sm">
+                              {p.partNumber}
+                              {p.seriesGroup && (
+                                <span className="block text-[10px] font-sans font-normal text-slate-400 truncate max-w-[180px]">
+                                  {p.seriesGroup}
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3">
+                              <span className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded font-black text-slate-700 text-[10px] uppercase">
+                                {p.brand}
+                              </span>
+                            </td>
+                            <td className="p-3 font-sans text-slate-600 truncate max-w-[170px]" title={p.category}>
+                              {p.category}
+                            </td>
+                            <td className="p-3 font-mono text-slate-500">
+                              {p.innerDiameter || 0} × {p.outerDiameter || 0} × {p.width || 0} mm
+                            </td>
+                            <td className="p-3">
+                              <span className={`inline-flex items-center gap-1 font-bold ${
+                                p.stockStatus === 'Available' ? 'text-emerald-700' : 'text-amber-700'
+                              }`}>
+                                <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                {p.stockStatus || 'Available'}
+                              </span>
+                              <span className="text-slate-400 text-[10px] ml-1 font-mono">({p.stockCount ?? 50})</span>
+                            </td>
+                            <td className="p-3 font-mono font-black text-slate-900 text-sm">
+                              ₹{(p.price || 0).toLocaleString()}
+                            </td>
+                            <td className="p-3 text-center">
+                              <div className="flex items-center justify-center gap-1.5 font-sans" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingProduct({ ...p })}
+                                  className="bg-slate-100 hover:bg-[#003366] hover:text-white text-[#003366] text-[11px] font-bold px-3 py-1.5 rounded-lg border border-slate-200 transition flex items-center gap-1 shadow-2xs"
+                                >
+                                  View / Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteProduct(p.id, p.partNumber)}
+                                  className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-rose-50 transition"
+                                  title="Delete Bearing"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-                <button
-                  onClick={() => setShowNewProductModal(true)}
-                  className="bg-[#003366] text-white text-xs font-bold px-3 py-1.5 rounded flex items-center gap-1 hover:bg-[#002244]"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add Bearing
-                </button>
+                {/* Bottom Pagination Bar */}
+                {totalFiltered > 0 && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-50 border-t border-slate-200 text-xs">
+                    <div className="text-slate-500 font-medium">
+                      Page <strong className="text-slate-900">{currentPageSafe}</strong> of <strong className="text-slate-900">{totalPages.toLocaleString()}</strong> ({totalFiltered.toLocaleString()} total bearings)
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {/* First Page */}
+                      <button
+                        onClick={() => setProductCurrentPage(1)}
+                        disabled={currentPageSafe === 1}
+                        className="px-2.5 py-1.5 rounded bg-white border border-slate-200 text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition"
+                        title="First Page"
+                      >
+                        « First
+                      </button>
+
+                      {/* Prev Page */}
+                      <button
+                        onClick={() => setProductCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPageSafe === 1}
+                        className="px-2.5 py-1.5 rounded bg-white border border-slate-200 text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition"
+                      >
+                        ‹ Prev
+                      </button>
+
+                      {/* Page Numbers */}
+                      {showFirst && (
+                        <>
+                          <button
+                            onClick={() => setProductCurrentPage(1)}
+                            className="px-3 py-1.5 rounded bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100"
+                          >
+                            1
+                          </button>
+                          <span className="px-1 text-slate-400 font-bold">...</span>
+                        </>
+                      )}
+
+                      {visiblePages.map(page => (
+                        <button
+                          key={page}
+                          onClick={() => setProductCurrentPage(page)}
+                          className={`px-3 py-1.5 rounded font-bold transition ${
+                            currentPageSafe === page
+                              ? 'bg-[#003366] text-white shadow-xs'
+                              : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+
+                      {showLast && (
+                        <>
+                          <span className="px-1 text-slate-400 font-bold">...</span>
+                          <button
+                            onClick={() => setProductCurrentPage(totalPages)}
+                            className="px-3 py-1.5 rounded bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100"
+                          >
+                            {totalPages}
+                          </button>
+                        </>
+                      )}
+
+                      {/* Next Page */}
+                      <button
+                        onClick={() => setProductCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPageSafe === totalPages}
+                        className="px-2.5 py-1.5 rounded bg-white border border-slate-200 text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition"
+                      >
+                        Next ›
+                      </button>
+
+                      {/* Last Page */}
+                      <button
+                        onClick={() => setProductCurrentPage(totalPages)}
+                        disabled={currentPageSafe === totalPages}
+                        className="px-2.5 py-1.5 rounded bg-white border border-slate-200 text-slate-700 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 transition"
+                        title="Last Page"
+                      >
+                        Last »
+                      </button>
+                    </div>
+
+                    {/* Quick Jump */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-slate-500 font-medium">Go to:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={totalPages}
+                        placeholder={String(currentPageSafe)}
+                        value={jumpPageInput}
+                        onChange={(e) => setJumpPageInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const p = parseInt(jumpPageInput, 10);
+                            if (p >= 1 && p <= totalPages) {
+                              setProductCurrentPage(p);
+                              setJumpPageInput('');
+                            }
+                          }
+                        }}
+                        className="w-14 p-1 bg-white border border-slate-200 rounded text-center font-bold text-slate-800"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const p = parseInt(jumpPageInput, 10);
+                          if (p >= 1 && p <= totalPages) {
+                            setProductCurrentPage(p);
+                            setJumpPageInput('');
+                          }
+                        }}
+                        className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded"
+                      >
+                        Go
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* Total count badge */}
-            <div className="text-xs text-slate-500 font-medium">
-              Showing <strong>{
-                productsList.filter(p => {
-                  const matchQuery = !productSearch || p.partNumber?.toLowerCase().includes(productSearch.toLowerCase()) || p.brand?.toLowerCase().includes(productSearch.toLowerCase()) || p.category?.toLowerCase().includes(productSearch.toLowerCase());
-                  const matchBrand = productBrandFilter === 'All' || p.brand?.toUpperCase() === productBrandFilter.toUpperCase();
-                  return matchQuery && matchBrand;
-                }).length
-              }</strong> bearings in database
-            </div>
+              {/* ----------------- COMPREHENSIVE BEARING DETAILS & UPDATE MODAL ----------------- */}
+              {editingProduct && (
+                <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[92vh] overflow-y-auto border-2 border-[#003366] shadow-2xl space-y-5 text-xs">
+                    
+                    {/* Modal Header */}
+                    <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="bg-[#003366] text-white text-[10px] font-mono font-black px-2 py-0.5 rounded uppercase">
+                            {editingProduct.brand}
+                          </span>
+                          <h3 className="font-black text-lg text-[#003366] font-mono tracking-tight">
+                            {editingProduct.partNumber}
+                          </h3>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {editingProduct.category} {editingProduct.seriesGroup ? `• ${editingProduct.seriesGroup}` : ''}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => setEditingProduct(null)} 
+                        className="text-slate-400 hover:text-slate-900 p-1 rounded-lg hover:bg-slate-100 transition"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
 
-            {/* Products Table */}
-            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-2xs">
-              <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#003366] text-white text-[10px] uppercase font-mono sticky top-0 z-10">
-                    <tr>
-                      <th className="p-3">Image</th>
-                      <th className="p-3">Part Number</th>
-                      <th className="p-3">Brand</th>
-                      <th className="p-3">Category</th>
-                      <th className="p-3">Dimensions (IDxODxW)</th>
-                      <th className="p-3">Stock Units</th>
-                      <th className="p-3">Unit Price (INR)</th>
-                      <th className="p-3 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium font-mono">
-                    {productsList
-                      .filter(p => {
-                        const matchQuery = !productSearch || p.partNumber?.toLowerCase().includes(productSearch.toLowerCase()) || p.brand?.toLowerCase().includes(productSearch.toLowerCase()) || p.category?.toLowerCase().includes(productSearch.toLowerCase());
-                        const matchBrand = productBrandFilter === 'All' || p.brand?.toUpperCase() === productBrandFilter.toUpperCase();
-                        return matchQuery && matchBrand;
-                      })
-                      .map((p) => (
-                        <tr key={p.id || p._id || p.partNumber} className="hover:bg-slate-50">
-                          <td className="p-2.5">
-                            <div className="w-10 h-10 bg-slate-100 rounded border flex items-center justify-center overflow-hidden">
+                    <form onSubmit={handleUpdateProduct} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+                        
+                        {/* Left Column: Image, Price & Stock Controls (4 cols) */}
+                        <div className="md:col-span-4 space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                          
+                          {/* Image Box */}
+                          <div>
+                            <label className="block text-slate-700 font-black uppercase text-[10px] tracking-wider mb-2">
+                              Bearing Photo / Technical Drawing
+                            </label>
+                            <div className="w-full h-44 bg-white border-2 border-dashed border-slate-300 rounded-xl overflow-hidden flex items-center justify-center relative shadow-inner group">
                               <img
-                                src={p.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80'}
-                                alt={p.partNumber}
-                                className="w-full h-full object-cover"
+                                src={editingProduct.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80'}
+                                alt={editingProduct.partNumber}
+                                className="w-full h-full object-contain p-2 group-hover:scale-105 transition"
                                 onError={(e) => {
                                   e.target.onerror = null;
                                   e.target.src = '/favicon.svg';
                                 }}
                               />
                             </div>
-                          </td>
-                          <td className="p-3 font-bold text-[#003366]">{p.partNumber}</td>
-                          <td className="p-3 font-sans">
-                            <span className="bg-slate-100 border px-1.5 py-0.5 rounded font-black text-slate-700 text-[10px]">
-                              {p.brand}
-                            </span>
-                          </td>
-                          <td className="p-3 font-sans text-slate-600 truncate max-w-[140px]">{p.category}</td>
-                          <td className="p-3 text-slate-500">{p.innerDiameter} x {p.outerDiameter} x {p.width} mm</td>
-                          <td className="p-3 font-sans">
-                            <span className="text-emerald-700 font-bold">● {p.stockStatus || 'Available'}</span>
-                            <span className="text-slate-400 text-[10px] ml-1">({p.stockCount || 50})</span>
-                          </td>
-                          <td className="p-3 font-black text-slate-900">₹{p.price}</td>
-                          <td className="p-3 text-center">
-                            <div className="flex items-center justify-center gap-1.5 font-sans">
-                              <button
-                                onClick={() => setEditingProduct(p)}
-                                className="bg-slate-100 hover:bg-slate-200 text-[#003366] text-[10px] font-bold px-2.5 py-1 rounded border transition"
+                          </div>
+
+                          {/* Image Actions */}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <label
+                                htmlFor="modal-bearing-file-picker"
+                                className="w-full bg-[#003366] hover:bg-[#002244] text-white text-[11px] font-bold py-2 px-3 rounded-lg cursor-pointer transition text-center shadow-xs flex items-center justify-center gap-1.5"
                               >
-                                Edit / Image
-                              </button>
-                              <button
-                                onClick={() => handleDeleteProduct(p.id, p.partNumber)}
-                                className="text-red-500 hover:text-red-700 text-[10px] font-bold p-1"
-                                title="Delete"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
+                                📁 Upload Image from PC
+                              </label>
+                              <input
+                                id="modal-bearing-file-picker"
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleUploadImageFile(e, false)}
+                                className="hidden"
+                              />
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                            {uploadingImage && (
+                              <p className="text-[11px] text-amber-600 font-bold animate-pulse text-center">
+                                Uploading new image...
+                              </p>
+                            )}
 
-            {/* Edit Bearing & Image Modal */}
-            {editingProduct && (
-              <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-                <div className="bg-white rounded-lg p-6 max-w-lg w-full border-2 border-[#003366] space-y-4 text-xs">
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <div>
-                      <h3 className="font-bold text-sm text-[#003366] uppercase">
-                        Edit Bearing: {editingProduct.partNumber} ({editingProduct.brand})
-                      </h3>
-                      <span className="text-[10px] text-slate-400 font-mono">Update specifications and bearing image</span>
-                    </div>
-                    <button onClick={() => setEditingProduct(null)} className="text-slate-400 hover:text-slate-900">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                Or Image URL
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Paste image URL..."
+                                value={editingProduct.image || ''}
+                                onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
+                                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-mono"
+                              />
+                            </div>
+                          </div>
 
-                  <form onSubmit={handleUpdateProduct} className="space-y-3">
-                    {/* Image URL & File Upload & Live Preview */}
-                    <div className="space-y-2 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
-                      <div className="flex justify-between items-center">
-                        <label className="block text-slate-700 font-black uppercase text-[10px] tracking-wider">
-                          Bearing Image (File Upload or URL) *
-                        </label>
-                        {uploadingImage && (
-                          <span className="text-[10px] text-amber-600 font-bold animate-pulse">
-                            Uploading image...
-                          </span>
-                        )}
-                      </div>
+                          {/* Pricing & Commercial */}
+                          <div className="pt-2 border-t border-slate-200 space-y-2.5">
+                            <div>
+                              <label className="block text-slate-700 font-bold uppercase text-[10px]">
+                                Unit Price (INR ₹) *
+                              </label>
+                              <input
+                                type="number"
+                                required
+                                value={editingProduct.price || 0}
+                                onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
+                                className="w-full p-2 bg-white border border-slate-200 rounded-lg font-mono font-bold text-sm text-[#003366]"
+                              />
+                            </div>
 
-                      <div className="flex gap-3 items-center">
-                        <div className="w-16 h-16 bg-white border-2 border-slate-300 rounded-md overflow-hidden shrink-0 flex items-center justify-center shadow-inner relative group">
-                          <img
-                            src={editingProduct.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80'}
-                            alt="Preview"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = '/favicon.svg';
-                            }}
-                          />
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-slate-700 font-bold uppercase text-[10px]">Stock Status</label>
+                                <select
+                                  value={editingProduct.stockStatus || 'Available'}
+                                  onChange={(e) => setEditingProduct({ ...editingProduct, stockStatus: e.target.value })}
+                                  className="w-full p-2 bg-white border border-slate-200 rounded-lg font-bold"
+                                >
+                                  <option value="Available">Available</option>
+                                  <option value="Limited Stock">Limited Stock</option>
+                                  <option value="Low Stock">Low Stock</option>
+                                  <option value="Out of Stock">Out of Stock</option>
+                                  <option value="Pre-Order">Pre-Order</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-slate-700 font-bold uppercase text-[10px]">Stock Quantity</label>
+                                <input
+                                  type="number"
+                                  value={editingProduct.stockCount ?? 50}
+                                  onChange={(e) => setEditingProduct({ ...editingProduct, stockCount: parseInt(e.target.value, 10) || 0 })}
+                                  className="w-full p-2 bg-white border border-slate-200 rounded-lg font-mono"
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="flex-1 space-y-1.5">
-                          <div className="flex gap-2">
+                        {/* Right Column: Full Specifications & Engineering Details (8 cols) */}
+                        <div className="md:col-span-8 space-y-3">
+                          
+                          {/* Part Number, Brand, Category */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div>
+                              <label className="block text-slate-600 font-bold uppercase text-[10px]">Part Number *</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingProduct.partNumber || ''}
+                                onChange={(e) => setEditingProduct({ ...editingProduct, partNumber: e.target.value })}
+                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-mono font-bold text-xs"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-slate-600 font-bold uppercase text-[10px]">Brand *</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingProduct.brand || ''}
+                                onChange={(e) => setEditingProduct({ ...editingProduct, brand: e.target.value })}
+                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-bold text-xs"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-slate-600 font-bold uppercase text-[10px]">Category *</label>
+                              <input
+                                type="text"
+                                required
+                                value={editingProduct.category || ''}
+                                onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
+                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Dimensions */}
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <span className="block text-slate-700 font-bold uppercase text-[10px] mb-2">
+                              Engineering Dimensions (Millimeters)
+                            </span>
+                            <div className="grid grid-cols-4 gap-2 font-mono">
+                              <div>
+                                <label className="block text-slate-500 text-[10px] font-sans">Bore (ID d)</label>
+                                <input
+                                  type="number"
+                                  value={editingProduct.innerDiameter || 0}
+                                  onChange={(e) => setEditingProduct({ ...editingProduct, innerDiameter: parseFloat(e.target.value) || 0 })}
+                                  className="w-full p-2 bg-white border border-slate-200 rounded-lg font-bold"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-slate-500 text-[10px] font-sans">Outer Dia (OD D)</label>
+                                <input
+                                  type="number"
+                                  value={editingProduct.outerDiameter || 0}
+                                  onChange={(e) => setEditingProduct({ ...editingProduct, outerDiameter: parseFloat(e.target.value) || 0 })}
+                                  className="w-full p-2 bg-white border border-slate-200 rounded-lg font-bold"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-slate-500 text-[10px] font-sans">Width / Height (B/T)</label>
+                                <input
+                                  type="number"
+                                  value={editingProduct.width || 0}
+                                  onChange={(e) => setEditingProduct({ ...editingProduct, width: parseFloat(e.target.value) || 0 })}
+                                  className="w-full p-2 bg-white border border-slate-200 rounded-lg font-bold"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-slate-500 text-[10px] font-sans">Weight</label>
+                                <input
+                                  type="text"
+                                  value={editingProduct.weight || ''}
+                                  onChange={(e) => setEditingProduct({ ...editingProduct, weight: e.target.value })}
+                                  placeholder="e.g. 2.45kg"
+                                  className="w-full p-2 bg-white border border-slate-200 rounded-lg font-bold"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Material, Cage, Seal, Origin */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div>
+                              <label className="block text-slate-600 font-bold uppercase text-[10px]">Material / Steel Grade</label>
+                              <input
+                                type="text"
+                                value={editingProduct.material || ''}
+                                onChange={(e) => setEditingProduct({ ...editingProduct, material: e.target.value })}
+                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-slate-600 font-bold uppercase text-[10px]">Cage / Retainer Type</label>
+                              <input
+                                type="text"
+                                value={editingProduct.cageType || ''}
+                                onChange={(e) => setEditingProduct({ ...editingProduct, cageType: e.target.value })}
+                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div>
+                              <label className="block text-slate-600 font-bold uppercase text-[10px]">Seal / Shield Type</label>
+                              <input
+                                type="text"
+                                value={editingProduct.sealType || ''}
+                                onChange={(e) => setEditingProduct({ ...editingProduct, sealType: e.target.value })}
+                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-slate-600 font-bold uppercase text-[10px]">Load Rating</label>
+                              <input
+                                type="text"
+                                value={editingProduct.loadRating || ''}
+                                onChange={(e) => setEditingProduct({ ...editingProduct, loadRating: e.target.value })}
+                                placeholder="Dynamic / Static kN"
+                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-slate-600 font-bold uppercase text-[10px]">Country of Origin</label>
+                              <input
+                                type="text"
+                                value={editingProduct.countryOfOrigin || ''}
+                                onChange={(e) => setEditingProduct({ ...editingProduct, countryOfOrigin: e.target.value })}
+                                placeholder="e.g. Germany / USA / Japan"
+                                className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Application & Description */}
+                          <div>
+                            <label className="block text-slate-600 font-bold uppercase text-[10px]">Industry Application</label>
                             <input
                               type="text"
-                              placeholder="Paste image URL (or upload below)"
-                              value={editingProduct.image || ''}
-                              onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                              className="flex-1 p-2 bg-white border rounded text-xs font-mono"
+                              value={editingProduct.application || ''}
+                              onChange={(e) => setEditingProduct({ ...editingProduct, application: e.target.value })}
+                              placeholder="e.g. Heavy rolling mill chocks, crushers, continuous casting..."
+                              className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
                             />
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            <label
-                              htmlFor="edit-bearing-file-picker"
-                              className="bg-[#003366] hover:bg-[#002244] text-white text-[10px] font-bold px-3 py-1.5 rounded cursor-pointer transition shadow-2xs flex items-center gap-1"
-                            >
-                              📁 Upload Image from PC
-                            </label>
-                            <input
-                              id="edit-bearing-file-picker"
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleUploadImageFile(e, false)}
-                              className="hidden"
+                          <div>
+                            <label className="block text-slate-600 font-bold uppercase text-[10px]">Technical Description</label>
+                            <textarea
+                              rows={2}
+                              value={editingProduct.description || ''}
+                              onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                              placeholder="Detailed engineering notes, tolerances, and design specifications..."
+                              className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs resize-none"
                             />
-                            <span className="text-[10px] text-slate-400">JPG, PNG, WebP supported</span>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px]">Unit Price (INR) *</label>
-                        <input
-                          type="number"
-                          required
-                          value={editingProduct.price || 0}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2 bg-slate-50 border rounded font-mono font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px]">Stock Status</label>
-                        <select
-                          value={editingProduct.stockStatus || 'Available'}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, stockStatus: e.target.value })}
-                          className="w-full p-2 bg-slate-50 border rounded font-semibold"
+                      {/* Modal Footer Actions */}
+                      <div className="pt-3 border-t border-slate-200 flex flex-wrap justify-between items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleDeleteProduct(editingProduct.id, editingProduct.partNumber);
+                            setEditingProduct(null);
+                          }}
+                          className="px-3.5 py-2 text-rose-600 hover:bg-rose-50 rounded-lg font-bold text-xs uppercase flex items-center gap-1.5 transition"
                         >
-                          <option value="Available">Available</option>
-                          <option value="Low Stock">Low Stock</option>
-                          <option value="Out of Stock">Out of Stock</option>
-                        </select>
-                      </div>
-                    </div>
+                          <X className="w-4 h-4" /> Delete Bearing
+                        </button>
 
-                    <div className="grid grid-cols-3 gap-2 font-mono">
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px] font-sans">Inside Bore (ID)</label>
-                        <input
-                          type="number"
-                          value={editingProduct.innerDiameter || 0}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, innerDiameter: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2 bg-slate-50 border rounded"
-                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingProduct(null)}
+                            className="px-4 py-2 border border-slate-200 rounded-lg font-bold text-xs uppercase hover:bg-slate-50 transition"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-6 py-2.5 bg-[#f2cc4d] hover:bg-[#e0b434] text-slate-950 font-black text-xs uppercase rounded-lg shadow-md transition border-b-2 border-amber-600 flex items-center gap-2"
+                          >
+                            <Check className="w-4 h-4" /> Save & Update Bearing Details
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px] font-sans">Outside Dia (OD)</label>
-                        <input
-                          type="number"
-                          value={editingProduct.outerDiameter || 0}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, outerDiameter: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2 bg-slate-50 border rounded"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px] font-sans">Width (B)</label>
-                        <input
-                          type="number"
-                          value={editingProduct.width || 0}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, width: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2 bg-slate-50 border rounded"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px]">Category</label>
-                        <input
-                          type="text"
-                          value={editingProduct.category || ''}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
-                          className="w-full p-2 bg-slate-50 border rounded"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px]">Material</label>
-                        <input
-                          type="text"
-                          value={editingProduct.material || ''}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, material: e.target.value })}
-                          className="w-full p-2 bg-slate-50 border rounded"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="pt-2 flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditingProduct(null)}
-                        className="px-4 py-2 border rounded font-bold text-xs uppercase hover:bg-slate-50"
-                      >
-                        Cancel
+                    </form>
+                  </div>
+                </div>
+              )}
+              {/* Add New Bearing Modal */}
+              {showNewProductModal && (
+                <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-lg p-6 max-w-lg w-full border-2 border-[#003366] space-y-4 text-xs">
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <h3 className="font-bold text-sm text-[#003366] uppercase">Add New Bearing to Catalog</h3>
+                      <button onClick={() => setShowNewProductModal(false)} className="text-slate-400 hover:text-slate-900">
+                        <X className="w-5 h-5" />
                       </button>
+                    </div>
+
+                    <form onSubmit={handleCreateProduct} className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-600 font-bold uppercase text-[10px]">Part Number *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. 6205-2Z"
+                            value={newProductForm.partNumber}
+                            onChange={(e) => setNewProductForm({ ...newProductForm, partNumber: e.target.value })}
+                            className="w-full p-2 bg-slate-50 border rounded font-mono font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-600 font-bold uppercase text-[10px]">Brand *</label>
+                          <select
+                            value={newProductForm.brand}
+                            onChange={(e) => setNewProductForm({ ...newProductForm, brand: e.target.value })}
+                            className="w-full p-2 bg-slate-50 border rounded font-bold"
+                          >
+                            <option value="FAG">FAG</option>
+                            <option value="INA">INA</option>
+                            <option value="Elges">Elges</option>
+                            <option value="NTN">NTN</option>
+                            <option value="NSK">NSK</option>
+                            <option value="THK">THK</option>
+                            <option value="SKF">SKF</option>
+                            <option value="Timken">Timken</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Image Upload for New Product */}
+                      <div className="space-y-2 bg-slate-50 p-3 rounded border">
+                        <label className="block text-slate-600 font-bold uppercase text-[10px]">Bearing Image</label>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="text"
+                            placeholder="https://images.unsplash.com/... or upload below"
+                            value={newProductForm.image}
+                            onChange={(e) => setNewProductForm({ ...newProductForm, image: e.target.value })}
+                            className="flex-1 p-2 bg-white border rounded font-mono text-xs"
+                          />
+                          <label
+                            htmlFor="new-bearing-file-picker"
+                            className="bg-[#003366] hover:bg-[#002244] text-white text-[10px] font-bold px-3 py-2 rounded cursor-pointer transition shrink-0"
+                          >
+                            📁 Upload File
+                          </label>
+                          <input
+                            id="new-bearing-file-picker"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleUploadImageFile(e, true)}
+                            className="hidden"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-slate-600 font-bold uppercase text-[10px]">Price (INR) *</label>
+                          <input
+                            type="number"
+                            required
+                            value={newProductForm.price}
+                            onChange={(e) => setNewProductForm({ ...newProductForm, price: parseFloat(e.target.value) || 0 })}
+                            className="w-full p-2 bg-slate-50 border rounded font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-600 font-bold uppercase text-[10px]">Category</label>
+                          <input
+                            type="text"
+                            value={newProductForm.category}
+                            onChange={(e) => setNewProductForm({ ...newProductForm, category: e.target.value })}
+                            className="w-full p-2 bg-slate-50 border rounded"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 font-mono">
+                        <div>
+                          <label className="block text-slate-600 font-bold uppercase text-[10px] font-sans">ID (mm)</label>
+                          <input
+                            type="number"
+                            value={newProductForm.innerDiameter}
+                            onChange={(e) => setNewProductForm({ ...newProductForm, innerDiameter: parseFloat(e.target.value) || 0 })}
+                            className="w-full p-2 bg-slate-50 border rounded"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-600 font-bold uppercase text-[10px] font-sans">OD (mm)</label>
+                          <input
+                            type="number"
+                            value={newProductForm.outerDiameter}
+                            onChange={(e) => setNewProductForm({ ...newProductForm, outerDiameter: parseFloat(e.target.value) || 0 })}
+                            className="w-full p-2 bg-slate-50 border rounded"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-slate-600 font-bold uppercase text-[10px] font-sans">Width (mm)</label>
+                          <input
+                            type="number"
+                            value={newProductForm.width}
+                            onChange={(e) => setNewProductForm({ ...newProductForm, width: parseFloat(e.target.value) || 0 })}
+                            className="w-full p-2 bg-slate-50 border rounded"
+                          />
+                        </div>
+                      </div>
+
                       <button
                         type="submit"
-                        className="px-5 py-2 bg-[#f2cc4d] hover:bg-[#e0b434] text-slate-950 font-black text-xs uppercase rounded border-b-2 border-amber-600"
+                        className="w-full bg-[#f2cc4d] hover:bg-[#e0b434] text-slate-950 font-black py-2.5 rounded uppercase text-xs border-b-2 border-amber-600 mt-2"
                       >
-                        Save Product & Image
+                        Save Bearing to Database
                       </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-
-            {/* Add New Bearing Modal */}
-            {showNewProductModal && (
-              <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-                <div className="bg-white rounded-lg p-6 max-w-lg w-full border-2 border-[#003366] space-y-4 text-xs">
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <h3 className="font-bold text-sm text-[#003366] uppercase">Add New Bearing to Catalog</h3>
-                    <button onClick={() => setShowNewProductModal(false)} className="text-slate-400 hover:text-slate-900">
-                      <X className="w-5 h-5" />
-                    </button>
+                    </form>
                   </div>
-
-                  <form onSubmit={handleCreateProduct} className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px]">Part Number *</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. 6205-2Z"
-                          value={newProductForm.partNumber}
-                          onChange={(e) => setNewProductForm({ ...newProductForm, partNumber: e.target.value })}
-                          className="w-full p-2 bg-slate-50 border rounded font-mono font-bold"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px]">Brand *</label>
-                        <select
-                          value={newProductForm.brand}
-                          onChange={(e) => setNewProductForm({ ...newProductForm, brand: e.target.value })}
-                          className="w-full p-2 bg-slate-50 border rounded font-bold"
-                        >
-                          <option value="FAG">FAG</option>
-                          <option value="INA">INA</option>
-                          <option value="Elges">Elges</option>
-                          <option value="NTN">NTN</option>
-                          <option value="NSK">NSK</option>
-                          <option value="THK">THK</option>
-                          <option value="SKF">SKF</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Image Upload for New Product */}
-                    <div className="space-y-2 bg-slate-50 p-3 rounded border">
-                      <label className="block text-slate-600 font-bold uppercase text-[10px]">Bearing Image</label>
-                      <div className="flex gap-2 items-center">
-                        <input
-                          type="text"
-                          placeholder="https://images.unsplash.com/... or upload below"
-                          value={newProductForm.image}
-                          onChange={(e) => setNewProductForm({ ...newProductForm, image: e.target.value })}
-                          className="flex-1 p-2 bg-white border rounded font-mono text-xs"
-                        />
-                        <label
-                          htmlFor="new-bearing-file-picker"
-                          className="bg-[#003366] hover:bg-[#002244] text-white text-[10px] font-bold px-3 py-2 rounded cursor-pointer transition shrink-0"
-                        >
-                          📁 Upload File
-                        </label>
-                        <input
-                          id="new-bearing-file-picker"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleUploadImageFile(e, true)}
-                          className="hidden"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px]">Price (INR) *</label>
-                        <input
-                          type="number"
-                          required
-                          value={newProductForm.price}
-                          onChange={(e) => setNewProductForm({ ...newProductForm, price: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2 bg-slate-50 border rounded font-mono"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px]">Category</label>
-                        <input
-                          type="text"
-                          value={newProductForm.category}
-                          onChange={(e) => setNewProductForm({ ...newProductForm, category: e.target.value })}
-                          className="w-full p-2 bg-slate-50 border rounded"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 font-mono">
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px] font-sans">ID (mm)</label>
-                        <input
-                          type="number"
-                          value={newProductForm.innerDiameter}
-                          onChange={(e) => setNewProductForm({ ...newProductForm, innerDiameter: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2 bg-slate-50 border rounded"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px] font-sans">OD (mm)</label>
-                        <input
-                          type="number"
-                          value={newProductForm.outerDiameter}
-                          onChange={(e) => setNewProductForm({ ...newProductForm, outerDiameter: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2 bg-slate-50 border rounded"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-600 font-bold uppercase text-[10px] font-sans">Width (mm)</label>
-                        <input
-                          type="number"
-                          value={newProductForm.width}
-                          onChange={(e) => setNewProductForm({ ...newProductForm, width: parseFloat(e.target.value) || 0 })}
-                          className="w-full p-2 bg-slate-50 border rounded"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full bg-[#f2cc4d] hover:bg-[#e0b434] text-slate-950 font-black py-2.5 rounded uppercase text-xs border-b-2 border-amber-600 mt-2"
-                    >
-                      Save Bearing to Database
-                    </button>
-                  </form>
                 </div>
-              </div>
-            )}
-
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })()}
 
         {/* ----------------- 5. QUOTES QUEUE ----------------- */}
         {activeSubTab === 'quotes' && (
